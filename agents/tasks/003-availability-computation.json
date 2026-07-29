@@ -1,0 +1,29 @@
+{
+  "title": "Availability computation endpoint (GET /availability)",
+  "profile": "Node/TypeScript Backend",
+  "repo": "masseur-booking",
+  "tech": "Express, PostgreSQL (pg), zod",
+  "keyConstraints": "TypeScript strict, all timestamps stored and compared in UTC, slots computed on read (no persisted slots table), read-only in this task (no admin CRUD for availability rules)",
+  "description": "Implement GET /availability?service_id&date, the endpoint the booking widget calls to show a customer which slots are actually bookable on a given day. This closes the gap flagged in task 001's review: booking creation currently has no concept of working hours, so without this endpoint (and the frontend wiring it enforces) a customer could request a 3am slot. Algorithm, per the design doc: (1) look up the provider's AvailabilityRule for the requested date's weekday to get base working hours; (2) apply any AvailabilityException for that exact date, which can either block part/all of the normal hours (e.g. vacation) or open extra hours (e.g. an added Saturday shift) — exceptions override the weekly rule for that date; (3) subtract time ranges covered by existing Booking rows with status IN ('pending','confirmed') for that provider on that date — cancelled bookings must not reduce availability; (4) slice the remaining free time into slots, where each slot's total size is service.duration_minutes + service.buffer_before_minutes + service.buffer_after_minutes (this matches task 001's buffer semantics: start_at marks the beginning of the whole reserved block, not just the massage itself); (5) return the list of bookable slot start times. This task does NOT include: ExternalBusyBlock / Google-Outlook sync (v2, out of scope), or admin CRUD endpoints for creating/editing AvailabilityRule or AvailabilityException rows (a separate task — for this task, assume rows already exist in the DB and are inserted via test fixtures, same pattern as task 001's Provider/Service rows).",
+  "acceptanceCriteria": [
+    "GET /availability?service_id=<uuid>&date=YYYY-MM-DD returns a JSON array of bookable slot start times (ISO 8601, UTC) for that provider on that date",
+    "Slots are generated only within hours defined by the AvailabilityRule matching that date's weekday",
+    "An AvailabilityException with type='blocked' for that date removes availability for its window, even if it falls within normal weekly hours (e.g. a vacation day returns no slots, or fewer than the weekly rule would otherwise allow)",
+    "An AvailabilityException with type='open' for that date adds availability outside the normal weekly hours (e.g. an extra Saturday shift)",
+    "Existing bookings with status 'pending' or 'confirmed' on that date remove their time range (start_at to start_at + duration + buffers) from the returned slots",
+    "A cancelled booking does not reduce availability",
+    "Each returned slot reflects a duration of service.duration_minutes + service.buffer_before_minutes + service.buffer_after_minutes for the requested service",
+    "Missing or malformed service_id or date returns 400 with a clear message; a service_id that doesn't exist or isn't active returns 404",
+    "date is interpreted relative to the provider's configured timezone (start/end of that calendar day in Provider.timezone), not UTC midnight-to-midnight, even though returned slot timestamps are UTC",
+    "No slots table or cache is written — availability is computed fresh from AvailabilityRule, AvailabilityException, and Booking on every request",
+    "Response contains only slot start times — no booking ids, customer names, or other identifying details about who holds a given reserved range"
+  ],
+  "relevantFilePaths": [
+    "src/routes/availability.ts",
+    "src/services/availabilityService.ts",
+    "src/db/migrations/003_availability_rules_and_exceptions.sql",
+    "src/validation/availabilityQuerySchema.ts",
+    "src/db/types.ts"
+  ],
+  "securityConsiderations": "This is a read-only, unauthenticated public endpoint, same trust level as POST /bookings. Validate service_id and date shape server-side before querying (avoid unhandled DB errors leaking internals). Do not return anything that identifies existing bookings or customers — only free/busy computed as open slot times. Consider a lighter rate limit than POST /bookings (this is read-only and cacheable per request, but still worth capping to prevent scraping every future date in a tight loop)."
+}

@@ -31,5 +31,31 @@
       "test/integration/bookings.exclusionConstraint.test.ts",
       "agents/context_template.md"
     ]
+  },
+  {
+    "id": "002-booking-confirm-decline",
+    "title": "Masseur confirm/decline of pending bookings",
+    "profile": "Node/TypeScript Backend",
+    "timestamp": "2026-07-29T17:09:00Z",
+    "dodStatus": "pass",
+    "filesChanged": [
+      "agents/tasks/002-booking-confirm-decline.json",
+      "src/db/migrations/003_add_booking_status_timestamps.sql",
+      "src/config/auth.ts",
+      "src/middleware/requireMasseurAuth.ts",
+      "src/middleware/rateLimit.ts",
+      "src/errors.ts",
+      "src/db/types.ts",
+      "src/validation/bookingIdParam.ts",
+      "src/validation/declineBookingSchema.ts",
+      "src/services/bookingService.ts",
+      "src/services/emailQueueService.ts",
+      "src/routes/bookings.ts",
+      ".env.example",
+      "test/unit/requireMasseurAuth.test.ts",
+      "test/unit/bookingService.confirmDecline.test.ts",
+      "test/helpers/fixtures.ts",
+      "test/integration/bookings.confirmDecline.test.ts"
+    ]
   }
 ]

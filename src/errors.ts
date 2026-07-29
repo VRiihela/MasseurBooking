@@ -26,3 +26,21 @@ export class SlotUnavailableError extends AppError {
     super(409, "slot no longer available");
   }
 }
+
+export class UnauthorizedError extends AppError {
+  constructor() {
+    super(401, "Unauthorized");
+  }
+}
+
+export class BookingNotFoundError extends AppError {
+  constructor() {
+    super(404, "Booking not found");
+  }
+}
+
+export class BookingNotPendingError extends AppError {
+  constructor() {
+    super(409, "Booking is not pending");
+  }
+}

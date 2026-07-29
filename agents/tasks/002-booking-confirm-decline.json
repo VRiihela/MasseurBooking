@@ -1,0 +1,26 @@
+{
+  "title": "Masseur confirm/decline of pending bookings",
+  "profile": "Node/TypeScript Backend",
+  "repo": "masseur-booking",
+  "tech": "Express, PostgreSQL (pg), builds on 001-booking-creation",
+  "keyConstraints": "TypeScript strict, all timestamps stored and compared in UTC, admin endpoints must be authenticated, no calendar API integration exists yet (out of scope)",
+  "description": "Implement POST /bookings/:id/confirm and POST /bookings/:id/decline, the masseur-facing admin endpoints that resolve a pending booking request. Confirm: pending -> confirmed, enqueue a 'booking confirmed' email job to the customer. Decline: pending -> cancelled, enqueue a 'booking declined' email job to the customer, freeing the slot immediately (cancelled bookings already don't count toward the exclusion constraint or overlap check from 001). Both endpoints require an authenticated masseur -- no masseur login system exists yet, so this task also adds a minimal bearer-token admin auth gate as a stand-in, explicitly flagged as not the final auth mechanism (context_template.md specifies email/password or magic link for the real masseur login, which is a separate task). No Google/Outlook calendar push is implemented here -- that requires OAuth/CalendarConnection infrastructure that doesn't exist yet and is out of scope.",
+  "acceptanceCriteria": [
+    "POST /bookings/:id/confirm on a pending booking sets status to 'confirmed' and returns 200 with { id, status, confirmed_at }",
+    "POST /bookings/:id/decline on a pending booking sets status to 'cancelled', records cancelled_at (and cancellation_reason if provided), and returns 200 with { id, status, cancelled_at, cancellation_reason }",
+    "Confirming or declining a booking that is not 'pending' (already confirmed/cancelled) returns 409, not a silent no-op or 500",
+    "Confirming or declining an unknown booking id returns 404",
+    "Two concurrent confirm/decline requests for the same pending booking: exactly one succeeds, the other gets 409 -- verified with a concurrency test",
+    "Both endpoints reject requests without a valid masseur admin bearer token with 401",
+    "On successful confirm, a 'booking confirmed' (not a calendar push) email job is enqueued for the customer; on successful decline, a 'booking declined' email job is enqueued",
+    "No Google/Outlook calendar API call is made by either endpoint"
+  ],
+  "relevantFilePaths": [
+    "src/routes/bookings.ts",
+    "src/services/bookingService.ts",
+    "src/services/emailQueueService.ts",
+    "src/middleware/requireMasseurAuth.ts",
+    "src/db/migrations/003_add_booking_status_timestamps.sql"
+  ],
+  "securityConsiderations": "The bearer-token admin auth is a minimal placeholder, not the final masseur login -- must be flagged clearly so it isn't mistaken for a finished auth system. Compare the token in constant time to avoid timing attacks. Rate-limit the admin endpoints too, since a static token is brute-forceable in principle. Do not leak whether a booking id exists to an unauthenticated caller (401 before 404 -- check auth first). Never let a decline/confirm silently succeed on a non-pending booking (that would let a stale double-submit flip a cancelled booking back, or re-fire emails)."
+}

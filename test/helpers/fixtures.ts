@@ -26,3 +26,25 @@ export async function resetAndSeed(pool: Pool): Promise<{ providerId: string; se
 
   return { providerId, serviceId };
 }
+
+export async function createPendingBooking(
+  pool: Pool,
+  providerId: string,
+  serviceId: string,
+): Promise<string> {
+  const customerResult = await pool.query<{ id: string }>(
+    `INSERT INTO customers (name, email, phone) VALUES ('Jane Doe', 'jane@example.com', '+1234567890') RETURNING id`,
+  );
+  const customerId = customerResult.rows[0].id;
+
+  const startAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+  const endAt = new Date(startAt.getTime() + 60 * 60_000);
+
+  const bookingResult = await pool.query<{ id: string }>(
+    `INSERT INTO bookings (provider_id, service_id, customer_id, start_at, end_at, status)
+     VALUES ($1, $2, $3, $4, $5, 'pending') RETURNING id`,
+    [providerId, serviceId, customerId, startAt.toISOString(), endAt.toISOString()],
+  );
+
+  return bookingResult.rows[0].id;
+}

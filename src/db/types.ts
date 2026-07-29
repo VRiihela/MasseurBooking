@@ -30,11 +30,19 @@ export interface Booking {
   endAt: Date;
   status: BookingStatus;
   createdAt: Date;
+  confirmedAt: Date | null;
+  cancelledAt: Date | null;
+  cancellationReason: string | null;
 }
+
+export type EmailJobType =
+  | "booking_request_received"
+  | "booking_confirmed"
+  | "booking_declined";
 
 export interface EmailJob {
   id: string;
-  type: "booking_request_received";
+  type: EmailJobType;
   payload: Record<string, unknown>;
   status: "queued" | "sent" | "failed";
   createdAt: Date;

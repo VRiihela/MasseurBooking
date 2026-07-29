@@ -1,9 +1,18 @@
 import type { PoolClient } from "pg";
 import { withTransaction } from "../db/pool.js";
 import type { Booking } from "../db/types.js";
-import { ServiceNotFoundError, SlotUnavailableError } from "../errors.js";
+import {
+  BookingNotFoundError,
+  BookingNotPendingError,
+  ServiceNotFoundError,
+  SlotUnavailableError,
+} from "../errors.js";
 import type { CreateBookingInput } from "../validation/bookingSchema.js";
-import { enqueueBookingRequestReceived } from "./emailQueueService.js";
+import {
+  enqueueBookingConfirmed,
+  enqueueBookingDeclined,
+  enqueueBookingRequestReceived,
+} from "./emailQueueService.js";
 
 interface ServiceRow {
   id: string;
@@ -20,8 +29,54 @@ interface BookingRow {
   customer_id: string;
   start_at: Date;
   end_at: Date;
-  status: "pending";
+  status: "pending" | "confirmed" | "cancelled";
   created_at: Date;
+  confirmed_at: Date | null;
+  cancelled_at: Date | null;
+  cancellation_reason: string | null;
+}
+
+const BOOKING_COLUMNS = `id, provider_id, service_id, customer_id, start_at, end_at, status,
+       created_at, confirmed_at, cancelled_at, cancellation_reason`;
+
+async function findBookingById(client: PoolClient, id: string): Promise<BookingRow | undefined> {
+  const result = await client.query<BookingRow>(
+    `SELECT ${BOOKING_COLUMNS} FROM bookings WHERE id = $1`,
+    [id],
+  );
+  return result.rows[0];
+}
+
+/**
+ * Confirm/decline transitions race against an *existing* row (unlike
+ * creation, which races against a not-yet-existing one), so a plain
+ * conditional UPDATE is enough to serialize concurrent attempts: Postgres's
+ * normal row-level locking makes the second UPDATE wait for the first to
+ * commit, then its WHERE clause re-evaluates against the now-committed row
+ * and matches zero rows. No advisory lock needed here.
+ */
+async function transitionPendingBooking(
+  client: PoolClient,
+  id: string,
+  setClause: string,
+  params: unknown[],
+): Promise<BookingRow> {
+  const result = await client.query<BookingRow>(
+    `UPDATE bookings SET ${setClause}
+     WHERE id = $1 AND status = 'pending'
+     RETURNING ${BOOKING_COLUMNS}`,
+    [id, ...params],
+  );
+  const row = result.rows[0];
+  if (row) {
+    return row;
+  }
+
+  const existing = await findBookingById(client, id);
+  if (!existing) {
+    throw new BookingNotFoundError();
+  }
+  throw new BookingNotPendingError();
 }
 
 /**
@@ -87,7 +142,19 @@ function toBooking(row: BookingRow): Booking {
     endAt: row.end_at,
     status: row.status,
     createdAt: row.created_at,
+    confirmedAt: row.confirmed_at,
+    cancelledAt: row.cancelled_at,
+    cancellationReason: row.cancellation_reason,
   };
+}
+
+async function loadCustomerEmail(client: PoolClient, customerId: string): Promise<string> {
+  const result = await client.query<{ email: string }>(
+    `SELECT email FROM customers WHERE id = $1`,
+    [customerId],
+  );
+  // customer_id is a NOT NULL FK to customers, so a booking row always has one.
+  return result.rows[0].email;
 }
 
 export async function createBooking(input: CreateBookingInput): Promise<Booking> {
@@ -112,7 +179,7 @@ export async function createBooking(input: CreateBookingInput): Promise<Booking>
     const insertResult = await client.query<BookingRow>(
       `INSERT INTO bookings (provider_id, service_id, customer_id, start_at, end_at, status)
        VALUES ($1, $2, $3, $4, $5, 'pending')
-       RETURNING id, provider_id, service_id, customer_id, start_at, end_at, status, created_at`,
+       RETURNING ${BOOKING_COLUMNS}`,
       [service.provider_id, service.id, customerId, startAt.toISOString(), endAt.toISOString()],
     );
 
@@ -120,6 +187,36 @@ export async function createBooking(input: CreateBookingInput): Promise<Booking>
 
     await enqueueBookingRequestReceived(client, booking, input.customer.email);
 
+    return booking;
+  });
+}
+
+export async function confirmBooking(id: string): Promise<Booking> {
+  return withTransaction(async (client) => {
+    const row = await transitionPendingBooking(
+      client,
+      id,
+      "status = 'confirmed', confirmed_at = now()",
+      [],
+    );
+    const booking = toBooking(row);
+    const customerEmail = await loadCustomerEmail(client, booking.customerId);
+    await enqueueBookingConfirmed(client, booking, customerEmail);
+    return booking;
+  });
+}
+
+export async function declineBooking(id: string, reason: string | undefined): Promise<Booking> {
+  return withTransaction(async (client) => {
+    const row = await transitionPendingBooking(
+      client,
+      id,
+      "status = 'cancelled', cancelled_at = now(), cancellation_reason = $2",
+      [reason ?? null],
+    );
+    const booking = toBooking(row);
+    const customerEmail = await loadCustomerEmail(client, booking.customerId);
+    await enqueueBookingDeclined(client, booking, customerEmail);
     return booking;
   });
 }

@@ -15,3 +15,29 @@ export async function enqueueBookingRequestReceived(
     JSON.stringify({ bookingId: booking.id, customerEmail }),
   ]);
 }
+
+export async function enqueueBookingConfirmed(
+  client: PoolClient,
+  booking: Booking,
+  customerEmail: string,
+): Promise<void> {
+  await client.query(`INSERT INTO email_jobs (type, payload) VALUES ($1, $2::jsonb)`, [
+    "booking_confirmed",
+    JSON.stringify({ bookingId: booking.id, customerEmail }),
+  ]);
+}
+
+export async function enqueueBookingDeclined(
+  client: PoolClient,
+  booking: Booking,
+  customerEmail: string,
+): Promise<void> {
+  await client.query(`INSERT INTO email_jobs (type, payload) VALUES ($1, $2::jsonb)`, [
+    "booking_declined",
+    JSON.stringify({
+      bookingId: booking.id,
+      customerEmail,
+      cancellationReason: booking.cancellationReason,
+    }),
+  ]);
+}
