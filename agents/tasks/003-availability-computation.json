@@ -21,7 +21,7 @@
   "relevantFilePaths": [
     "src/routes/availability.ts",
     "src/services/availabilityService.ts",
-    "src/db/migrations/003_availability_rules_and_exceptions.sql",
+    "src/db/migrations/004_availability_rules_and_exceptions.sql",
     "src/validation/availabilityQuerySchema.ts",
     "src/db/types.ts"
   ],

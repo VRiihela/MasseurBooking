@@ -17,3 +17,13 @@ export const adminRateLimit = rateLimit({
   legacyHeaders: false,
   message: { error: "Too many requests. Please try again shortly." },
 });
+
+// Read-only and public, but still capped against a scripted loop scraping
+// every future date.
+export const availabilityRateLimit = rateLimit({
+  windowMs: 60_000,
+  limit: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many requests. Please try again shortly." },
+});

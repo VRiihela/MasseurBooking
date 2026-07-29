@@ -5,15 +5,21 @@ import type { Pool } from "pg";
  * inserted here in beforeEach — there is no seed migration. Migrations only
  * create schema (tables, constraints, extensions); they never insert rows.
  */
-export async function resetAndSeed(pool: Pool): Promise<{ providerId: string; serviceId: string }> {
+export async function resetAndSeed(
+  pool: Pool,
+  timezone = "UTC",
+): Promise<{ providerId: string; serviceId: string }> {
   await pool.query("DELETE FROM email_jobs");
   await pool.query("DELETE FROM bookings");
+  await pool.query("DELETE FROM availability_exceptions");
+  await pool.query("DELETE FROM availability_rules");
   await pool.query("DELETE FROM customers");
   await pool.query("DELETE FROM services");
   await pool.query("DELETE FROM providers");
 
   const providerResult = await pool.query<{ id: string }>(
-    `INSERT INTO providers (name) VALUES ('Test Masseur') RETURNING id`,
+    `INSERT INTO providers (name, timezone) VALUES ('Test Masseur', $1) RETURNING id`,
+    [timezone],
   );
   const providerId = providerResult.rows[0].id;
 
@@ -25,6 +31,55 @@ export async function resetAndSeed(pool: Pool): Promise<{ providerId: string; se
   const serviceId = serviceResult.rows[0].id;
 
   return { providerId, serviceId };
+}
+
+export async function createAvailabilityRule(
+  pool: Pool,
+  providerId: string,
+  weekday: number,
+  startTime: string,
+  endTime: string,
+): Promise<void> {
+  await pool.query(
+    `INSERT INTO availability_rules (provider_id, weekday, start_time, end_time) VALUES ($1, $2, $3, $4)`,
+    [providerId, weekday, startTime, endTime],
+  );
+}
+
+export async function createAvailabilityException(
+  pool: Pool,
+  providerId: string,
+  date: string,
+  type: "blocked" | "open",
+  startTime: string,
+  endTime: string,
+): Promise<void> {
+  await pool.query(
+    `INSERT INTO availability_exceptions (provider_id, date, type, start_time, end_time) VALUES ($1, $2, $3, $4, $5)`,
+    [providerId, date, type, startTime, endTime],
+  );
+}
+
+export async function createBookingAt(
+  pool: Pool,
+  providerId: string,
+  serviceId: string,
+  startAt: string,
+  endAt: string,
+  status: "pending" | "confirmed" | "cancelled" = "pending",
+): Promise<string> {
+  const customerResult = await pool.query<{ id: string }>(
+    `INSERT INTO customers (name, email, phone) VALUES ('Jane Doe', 'jane@example.com', '+1234567890') RETURNING id`,
+  );
+  const customerId = customerResult.rows[0].id;
+
+  const bookingResult = await pool.query<{ id: string }>(
+    `INSERT INTO bookings (provider_id, service_id, customer_id, start_at, end_at, status)
+     VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
+    [providerId, serviceId, customerId, startAt, endAt, status],
+  );
+
+  return bookingResult.rows[0].id;
 }
 
 export async function createPendingBooking(

@@ -3,6 +3,26 @@ export type BookingStatus = "pending" | "confirmed" | "cancelled";
 export interface Provider {
   id: string;
   name: string;
+  timezone: string;
+}
+
+export type AvailabilityExceptionType = "blocked" | "open";
+
+export interface AvailabilityRule {
+  id: string;
+  providerId: string;
+  weekday: number; // ISO 8601: 1 = Monday .. 7 = Sunday
+  startTime: string; // "HH:MM:SS" local wall time
+  endTime: string;
+}
+
+export interface AvailabilityException {
+  id: string;
+  providerId: string;
+  date: string; // "YYYY-MM-DD"
+  type: AvailabilityExceptionType;
+  startTime: string;
+  endTime: string;
 }
 
 export interface Service {

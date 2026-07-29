@@ -57,5 +57,28 @@
       "test/helpers/fixtures.ts",
       "test/integration/bookings.confirmDecline.test.ts"
     ]
+  },
+  {
+    "id": "003-availability-computation",
+    "title": "Availability computation endpoint (GET /availability)",
+    "profile": "Node/TypeScript Backend",
+    "timestamp": "2026-07-29T17:35:00Z",
+    "dodStatus": "pass",
+    "filesChanged": [
+      "agents/tasks/003-availability-computation.json",
+      "src/db/migrations/004_availability_rules_and_exceptions.sql",
+      "src/db/types.ts",
+      "src/services/availabilityIntervals.ts",
+      "src/services/availabilityService.ts",
+      "src/validation/availabilityQuerySchema.ts",
+      "src/middleware/rateLimit.ts",
+      "src/routes/availability.ts",
+      "src/app.ts",
+      "package.json",
+      "test/helpers/fixtures.ts",
+      "test/unit/availabilityIntervals.test.ts",
+      "test/unit/availabilityQuerySchema.test.ts",
+      "test/integration/availability.test.ts"
+    ]
   }
 ]
