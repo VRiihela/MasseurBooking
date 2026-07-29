@@ -1,0 +1,24 @@
+{
+  "title": "Booking creation with double-booking prevention and manual confirmation",
+  "profile": "Node/TypeScript Backend",
+  "repo": "masseur-booking",
+  "tech": "Express, PostgreSQL (node-postgres or Prisma), btree_gist exclusion constraint",
+  "keyConstraints": "TypeScript strict, all timestamps stored and compared in UTC, no online payment collection, bookings must never auto-confirm",
+  "description": "Implement POST /bookings, the endpoint a customer's browser calls to reserve a slot. It must: (1) run inside a single DB transaction that SELECTs existing bookings for the provider overlapping the requested time range FOR UPDATE, to serialize concurrent requests for the same slot; (2) if an overlap exists, roll back and return a 409 with a clear 'slot no longer available' message; (3) otherwise insert a new Booking row with status = 'pending' (not 'confirmed' — the masseur confirms manually via a separate endpoint, out of scope for this task); (4) as a database-level backstop independent of the application logic, add a Postgres exclusion constraint using the btree_gist extension on (provider_id, tstzrange(start_at, end_at)) restricted to rows where status is 'pending' or 'confirmed', so overlapping bookings are impossible even if the transaction logic has a bug or a second server instance is running; (5) on successful commit, enqueue a 'booking request received' email job to the customer — not a confirmation email, since the masseur hasn't approved it yet.",
+  "acceptanceCriteria": [
+    "POST /bookings creates a Booking row with status 'pending' when the requested (service_id, start_at) slot is free for that provider",
+    "Two concurrent POST /bookings requests for the same overlapping slot: exactly one succeeds (201), the other receives a 409 with a 'slot no longer available' message — verified with an integration test that fires both requests concurrently",
+    "A Postgres exclusion constraint on (provider_id, tstzrange(start_at, end_at)) for status IN ('pending','confirmed') exists via migration, and a direct SQL insert that bypasses the application layer still fails on an overlapping range",
+    "start_at/end_at are always stored and compared in UTC; a request with a non-UTC or ambiguous timestamp is rejected with a 400, not silently converted",
+    "Cancelled bookings (status = 'cancelled') do not count toward the exclusion constraint or toward availability",
+    "On successful creation, a 'booking request received' (not confirmation) email job is enqueued for the customer",
+    "No calendar API call (Google/Outlook) is made at this stage — that only happens on masseur confirmation, which is a separate task"
+  ],
+  "relevantFilePaths": [
+    "src/routes/bookings.ts",
+    "src/services/bookingService.ts",
+    "src/db/migrations/xxxx_create_bookings_exclusion_constraint.sql",
+    "src/db/schema.ts"
+  ],
+  "securityConsiderations": "Validate service_id belongs to the provider and start_at is a real, currently-open slot (recompute availability server-side — never trust a slot the client claims is open). Do not leak whether a specific time was booked by someone else beyond the generic 'slot no longer available' message. Rate-limit POST /bookings per IP/session to prevent someone scripting repeated requests to lock out all slots. No payment or card data is handled by this endpoint."
+}

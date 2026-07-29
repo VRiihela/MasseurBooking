@@ -1,0 +1,20 @@
+{
+  "title": "Add user input validation to registration endpoint",
+  "profile": "Node/TypeScript Backend",
+  "repo": "my-app",
+  "tech": "Express, Prisma, Zod",
+  "keyConstraints": "TypeScript strict, ESM, JWT auth",
+  "description": "The /api/register endpoint currently accepts any input without validation. Add proper validation for email format, password strength, and username length before saving to the database.",
+  "acceptanceCriteria": [
+    "Email must be a valid format (RFC 5322)",
+    "Password must be at least 12 characters with mixed case, numbers, and symbols",
+    "Username must be 3-30 characters, alphanumeric and underscores only",
+    "All validation errors return 400 with a clear message",
+    "Valid input passes through to existing registration logic unchanged"
+  ],
+  "relevantFilePaths": [
+    "src/routes/auth.ts",
+    "src/middleware/validate.ts"
+  ],
+  "securityConsiderations": "Prevent injection attacks through username/email fields. Avoid leaking information about existing users in error messages."
+}

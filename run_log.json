@@ -1,0 +1,35 @@
+[
+  {
+    "id": "001-booking-creation",
+    "title": "Booking creation with double-booking prevention and manual confirmation",
+    "profile": "Node/TypeScript Backend",
+    "timestamp": "2026-07-29T16:52:00Z",
+    "dodStatus": "pass",
+    "filesChanged": [
+      "package.json",
+      "tsconfig.json",
+      "vitest.config.ts",
+      "eslint.config.js",
+      ".env.example",
+      "src/config/db.ts",
+      "src/db/pool.ts",
+      "src/db/types.ts",
+      "src/db/migrations/001_init_core_tables.sql",
+      "src/db/migrations/002_bookings_and_exclusion_constraint.sql",
+      "src/errors.ts",
+      "src/validation/bookingSchema.ts",
+      "src/services/bookingService.ts",
+      "src/services/emailQueueService.ts",
+      "src/middleware/rateLimit.ts",
+      "src/routes/bookings.ts",
+      "src/app.ts",
+      "src/server.ts",
+      "test/helpers/fixtures.ts",
+      "test/unit/bookingSchema.test.ts",
+      "test/unit/bookingService.test.ts",
+      "test/integration/bookings.concurrency.test.ts",
+      "test/integration/bookings.exclusionConstraint.test.ts",
+      "agents/context_template.md"
+    ]
+  }
+]
