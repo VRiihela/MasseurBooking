@@ -28,6 +28,7 @@ export interface AvailabilityException {
 export interface Service {
   id: string;
   providerId: string;
+  name: string;
   durationMinutes: number;
   bufferBeforeMinutes: number;
   bufferAfterMinutes: number;
@@ -60,10 +61,26 @@ export type EmailJobType =
   | "booking_confirmed"
   | "booking_declined";
 
+export type EmailJobStatus = "queued" | "sending" | "sent" | "failed";
+
 export interface EmailJob {
   id: string;
   type: EmailJobType;
   payload: Record<string, unknown>;
-  status: "queued" | "sent" | "failed";
+  status: EmailJobStatus;
   createdAt: Date;
+  attempts: number;
+  lastError: string | null;
+  sentAt: Date | null;
+  nextAttemptAt: Date;
+  claimedAt: Date | null;
+}
+
+export interface BookingEmailPayload {
+  bookingId: string;
+  customerEmail: string;
+  customerName: string;
+  serviceName: string;
+  startAtLocal: string;
+  cancellationReason?: string | null;
 }

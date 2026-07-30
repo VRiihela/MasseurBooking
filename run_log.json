@@ -91,5 +91,27 @@
       "test/helpers/fixtures.ts",
       "test/integration/availability.test.ts"
     ]
+  },
+  {
+    "id": "005-email-worker",
+    "title": "Email worker: send queued booking notification emails",
+    "profile": "Node/TypeScript Backend",
+    "timestamp": "2026-07-30T13:18:00Z",
+    "dodStatus": "pass",
+    "filesChanged": [
+      "src/db/migrations/005_add_email_job_retry_columns.sql",
+      "src/db/types.ts",
+      "src/config/email.ts",
+      "src/services/emailSender.ts",
+      "src/services/emailTemplates.ts",
+      "src/services/emailWorker.ts",
+      "src/services/emailQueueService.ts",
+      "src/services/bookingService.ts",
+      "src/server.ts",
+      ".env.example",
+      "test/unit/emailTemplates.test.ts",
+      "test/unit/emailWorker.test.ts",
+      "test/integration/emailJobs.concurrency.test.ts"
+    ]
   }
 ]

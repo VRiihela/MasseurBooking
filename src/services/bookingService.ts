@@ -17,9 +17,11 @@ import {
 interface ServiceRow {
   id: string;
   provider_id: string;
+  name: string;
   duration_minutes: number;
   buffer_before_minutes: number;
   buffer_after_minutes: number;
+  provider_timezone: string;
 }
 
 interface BookingRow {
@@ -93,8 +95,11 @@ async function lockProvider(client: PoolClient, providerId: string): Promise<voi
 
 async function loadActiveService(client: PoolClient, serviceId: string): Promise<ServiceRow> {
   const result = await client.query<ServiceRow>(
-    `SELECT id, provider_id, duration_minutes, buffer_before_minutes, buffer_after_minutes
-     FROM services WHERE id = $1 AND active = true`,
+    `SELECT s.id, s.provider_id, s.name, s.duration_minutes, s.buffer_before_minutes,
+            s.buffer_after_minutes, p.timezone AS provider_timezone
+     FROM services s
+     JOIN providers p ON p.id = s.provider_id
+     WHERE s.id = $1 AND s.active = true`,
     [serviceId],
   );
   const row = result.rows[0];
@@ -148,13 +153,34 @@ function toBooking(row: BookingRow): Booking {
   };
 }
 
-async function loadCustomerEmail(client: PoolClient, customerId: string): Promise<string> {
-  const result = await client.query<{ email: string }>(
-    `SELECT email FROM customers WHERE id = $1`,
-    [customerId],
+interface BookingEmailContextRow {
+  customer_email: string;
+  customer_name: string;
+  service_name: string;
+  provider_timezone: string;
+}
+
+/**
+ * One join covering customers+services+providers via the booking's own FKs,
+ * used by confirm/decline to build the email payload without the caller
+ * having to separately re-fetch each related row.
+ */
+async function loadBookingEmailContext(
+  client: PoolClient,
+  booking: Booking,
+): Promise<BookingEmailContextRow> {
+  const result = await client.query<BookingEmailContextRow>(
+    `SELECT c.email AS customer_email, c.name AS customer_name,
+            s.name AS service_name, p.timezone AS provider_timezone
+     FROM bookings b
+     JOIN customers c ON c.id = b.customer_id
+     JOIN services s ON s.id = b.service_id
+     JOIN providers p ON p.id = b.provider_id
+     WHERE b.id = $1`,
+    [booking.id],
   );
-  // customer_id is a NOT NULL FK to customers, so a booking row always has one.
-  return result.rows[0].email;
+  // The booking's FKs are all NOT NULL, so this always resolves to one row.
+  return result.rows[0];
 }
 
 export async function createBooking(input: CreateBookingInput): Promise<Booking> {
@@ -185,7 +211,11 @@ export async function createBooking(input: CreateBookingInput): Promise<Booking>
 
     const booking = toBooking(insertResult.rows[0]);
 
-    await enqueueBookingRequestReceived(client, booking, input.customer.email);
+    await enqueueBookingRequestReceived(client, booking, input.customer.email, {
+      customerName: input.customer.name,
+      serviceName: service.name,
+      providerTimezone: service.provider_timezone,
+    });
 
     return booking;
   });
@@ -200,8 +230,12 @@ export async function confirmBooking(id: string): Promise<Booking> {
       [],
     );
     const booking = toBooking(row);
-    const customerEmail = await loadCustomerEmail(client, booking.customerId);
-    await enqueueBookingConfirmed(client, booking, customerEmail);
+    const context = await loadBookingEmailContext(client, booking);
+    await enqueueBookingConfirmed(client, booking, context.customer_email, {
+      customerName: context.customer_name,
+      serviceName: context.service_name,
+      providerTimezone: context.provider_timezone,
+    });
     return booking;
   });
 }
@@ -215,8 +249,12 @@ export async function declineBooking(id: string, reason: string | undefined): Pr
       [reason ?? null],
     );
     const booking = toBooking(row);
-    const customerEmail = await loadCustomerEmail(client, booking.customerId);
-    await enqueueBookingDeclined(client, booking, customerEmail);
+    const context = await loadBookingEmailContext(client, booking);
+    await enqueueBookingDeclined(client, booking, context.customer_email, {
+      customerName: context.customer_name,
+      serviceName: context.service_name,
+      providerTimezone: context.provider_timezone,
+    });
     return booking;
   });
 }
