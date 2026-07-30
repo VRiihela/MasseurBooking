@@ -1,0 +1,35 @@
+{
+  "title": "Email worker: send queued booking notification emails",
+  "profile": "Node/TypeScript Backend",
+  "repo": "masseur-booking",
+  "tech": "Node.js, PostgreSQL (pg), an HTTP-based transactional email provider (Postmark recommended -- simple API, no extra infra; flag in the Architect stage if a different provider is preferred)",
+  "keyConstraints": "TypeScript strict, all timestamps stored in UTC and converted to the provider's local timezone only for human-readable email content, no job-queue library (BullMQ/pg-boss) -- continue the transactional-outbox + polling pattern already established in tasks 001/002, provider API key read from env only, never hardcoded or logged",
+  "description": "Tasks 001 and 002 insert rows into the email_jobs outbox table (booking_request_received, booking_confirmed, booking_declined) but nothing consumes them -- jobs sit in 'queued' status forever and customers currently receive zero communication. This task builds the worker that actually sends them. Scope: (1) extend email_jobs with retry-tracking columns (attempts, last_error, sent_at) via a new migration; (2) extend the payload written by emailQueueService.ts to include everything the email templates need at enqueue time -- customerName, the appointment's start time formatted in the provider's local timezone, and the service name -- so the worker never has to re-query bookings/services/customers at send time (those rows could theoretically change between enqueue and send; snapshotting avoids that class of bug entirely); (3) build a polling worker that claims a batch of 'queued' jobs using SELECT ... FOR UPDATE SKIP LOCKED, commits that claim in a short transaction, THEN makes the external email API call outside any open DB transaction (a slow or hanging provider must never hold a DB connection open); (4) on success mark 'sent' with sent_at; on failure increment attempts, record last_error, and make the job eligible for retry after a backoff delay, up to a max attempt count after which it's marked 'failed' permanently; (5) send through a small EmailSender interface (send(to, subject, body) -> Promise<void>) with one concrete provider adapter, so tests substitute a fake sender and the provider is swappable later without touching the claim/retry logic. Explicitly out of scope: real masseur login (still the task 002 placeholder token), Google/Outlook calendar push, customer magic-link cancel/reschedule -- separate tasks.",
+  "acceptanceCriteria": [
+    "A polling worker claims 'queued' email_jobs rows via FOR UPDATE SKIP LOCKED and attempts delivery through a pluggable EmailSender interface",
+    "Two concurrent claim attempts racing over the same queued jobs: each job is claimed and sent by exactly one of them -- no job is ever sent twice (verified with a concurrency test using a fake sender that records call counts)",
+    "On successful send, the job's status becomes 'sent' with a sent_at timestamp recorded, and it is never picked up again",
+    "On a failed send (fake sender throws), attempts increments, last_error is recorded, and the job is not retried instantly -- it waits for a backoff delay before becoming eligible again",
+    "After exceeding a configurable max attempt count, the job's status becomes 'failed' permanently and the worker stops picking it up",
+    "The DB transaction that claims a job commits before the external send call is made -- verified by the send call happening with no open transaction/held connection during the (simulated) network call",
+    "If the process is interrupted after claiming a job but before marking it sent/failed, the job does not get stuck indefinitely -- it re-enters the retry pool, not a permanently claimed-but-untouched state",
+    "emailQueueService.ts payloads are extended to include customerName, the appointment start time formatted in the provider's local timezone (not raw UTC), and the service name",
+    "Each of the three job types renders a distinct, correct subject and body using only fields already present in its own payload -- no query back to bookings/services/customers/providers happens inside the worker",
+    "cancellationReason and customerName (both originally free-text user input) are safely escaped/sanitized before being interpolated into the email body -- no HTML or header injection via a crafted name or cancellation reason",
+    "No provider API key appears in source, logs, or error messages -- read from env, matching the .env.example pattern from tasks 001/002"
+  ],
+  "relevantFilePaths": [
+    "src/db/migrations/005_add_email_job_retry_columns.sql",
+    "src/services/emailQueueService.ts",
+    "src/services/emailSender.ts",
+    "src/services/emailWorker.ts",
+    "src/services/emailTemplates.ts",
+    "src/db/types.ts",
+    "src/server.ts",
+    ".env.example",
+    "test/unit/emailWorker.test.ts",
+    "test/unit/emailTemplates.test.ts",
+    "test/integration/emailJobs.concurrency.test.ts"
+  ],
+  "securityConsiderations": "Sanitize/escape all user-supplied fields (customerName, cancellationReason) before interpolating into email subject/body to prevent HTML injection in the rendered email or header injection if any field ever reaches a raw header. Never log full email bodies containing customer PII beyond what's needed to debug a failure (e.g. log job id and error, not the full rendered email). Provider API key lives only in env config, never committed, never included in error messages sent back through the app's own error middleware. The worker's DB queries must stay parameterized like the rest of the codebase -- no string-built SQL."
+}

@@ -1,0 +1,23 @@
+{
+  "title": "Close availability test-coverage gaps (inactive service, non-UTC day boundary)",
+  "profile": "Node/TypeScript Backend",
+  "repo": "masseur-booking",
+  "tech": "Express, PostgreSQL (pg), Vitest, Luxon",
+  "keyConstraints": "TypeScript strict, all timestamps stored and compared in UTC. This is a test-hardening task, not a new feature — no schema or route changes are expected. If a test written for this task actually fails against the current code, fix the minimal bug in availabilityService.ts and call that out explicitly in the Release output rather than silently adjusting the test to match broken behavior.",
+  "description": "Task 003 (availability computation) shipped with solid interval-math and DST test coverage, but a review turned up two untested paths worth closing before building on top of this endpoint: (1) the query already filters services on active = true and correctly falls through to ServiceNotFoundError for an inactive service, but no test asserts a service that exists-but-is-inactive actually returns 404 rather than, say, an empty slot list or an unhandled error; (2) all existing tests use UTC or America/New_York (UTC-4/-5), where the provider's local calendar day and the UTC calendar day mostly overlap. No test uses a timezone with a large offset (e.g. Pacific/Kiritimati at UTC+14, or Pacific/Midway at UTC-11) where a provider's local midnight lands nowhere near UTC midnight — this is the scenario most likely to expose an off-by-one in the dayStartUtcMs/dayEndUtcMs boundary computation in computeAvailableSlots, particularly around whether a booking placed just before/after the provider's local midnight is correctly included in or excluded from the requested day's availability.",
+  "acceptanceCriteria": [
+    "A test creates a service with active = false and asserts GET /availability for that service_id returns 404 with the standard 'Service not found' body, not 200 or a 500",
+    "A test using a large positive UTC offset provider timezone (e.g. Pacific/Kiritimati, UTC+14) asserts that a rule's local start/end times convert to the correct UTC instants in the returned slot timestamps",
+    "A test using a large negative UTC offset provider timezone (e.g. Pacific/Midway, UTC-11) asserts the same",
+    "A test asserts a booking starting a few minutes before the requested date's local midnight (in a non-UTC, large-offset zone) is excluded from that day's availability, and does not spill into or block the following day's slots either",
+    "A test asserts a booking starting exactly at or just after the requested date's local midnight is included in that day's overlap subtraction, not off by one day in either direction",
+    "All pre-existing tests (unit and integration, tasks 001-003) still pass unmodified",
+    "If any new test fails against current code, the underlying bug in availabilityService.ts is fixed as part of this task and the fix is described in the Release output — the test is not weakened to pass around a real bug"
+  ],
+  "relevantFilePaths": [
+    "test/integration/availability.test.ts",
+    "test/helpers/fixtures.ts",
+    "src/services/availabilityService.ts"
+  ],
+  "securityConsiderations": "No new attack surface — this task only adds test coverage (and a bugfix if one is found). If the inactive-service path is ever found to leak details beyond the generic 'Service not found' message (e.g. distinguishing 'inactive' from 'nonexistent'), keep the response identical for both cases so the endpoint can't be used to enumerate which services a provider has deactivated."
+}

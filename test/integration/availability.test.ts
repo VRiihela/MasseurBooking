@@ -7,8 +7,13 @@ import {
   createAvailabilityException,
   createAvailabilityRule,
   createBookingAt,
+  createInactiveService,
   resetAndSeed,
 } from "../helpers/fixtures.js";
+
+function localToUtcIso(date: string, time: string, zone: string): string {
+  return DateTime.fromISO(`${date}T${time}`, { zone }).toUTC().toJSDate().toISOString();
+}
 
 // Requires DATABASE_URL to point at a disposable Postgres DB with migrations
 // 001-004 already applied.
@@ -151,6 +156,17 @@ describe("GET /availability", () => {
 
     expect(response.status).toBe(400);
   });
+
+  it("returns 404 for a service that exists but is inactive", async () => {
+    const inactiveServiceId = await createInactiveService(pool, providerId);
+
+    const response = await request(app)
+      .get("/availability")
+      .query({ service_id: inactiveServiceId, date: TEST_DATE });
+
+    expect(response.status).toBe(404);
+    expect(response.body).toEqual({ error: "Service not found" });
+  });
 });
 
 describe("GET /availability -- timezone/DST correctness", () => {
@@ -176,5 +192,65 @@ describe("GET /availability -- timezone/DST correctness", () => {
     expect(summerResponse.status).toBe(200);
     expect(winterResponse.body[0]).toBe(`${winterDate}T14:00:00.000Z`); // 09:00 EST = 14:00 UTC
     expect(summerResponse.body[0]).toBe(`${summerDate}T13:00:00.000Z`); // 09:00 EDT = 13:00 UTC
+  });
+});
+
+describe.each([
+  { label: "large positive offset (Pacific/Kiritimati, UTC+14)", zone: "Pacific/Kiritimati" },
+  { label: "large negative offset (Pacific/Midway, UTC-11)", zone: "Pacific/Midway" },
+])("GET /availability -- $label", ({ zone }) => {
+  beforeEach(async () => {
+    ({ providerId, serviceId } = await resetAndSeed(pool, zone));
+  });
+
+  it("converts the rule's local start/end to the correct UTC instants", async () => {
+    const ruleWeekday = DateTime.fromISO(TEST_DATE, { zone }).weekday;
+    await createAvailabilityRule(pool, providerId, ruleWeekday, "09:00:00", "12:00:00");
+
+    const response = await request(app)
+      .get("/availability")
+      .query({ service_id: serviceId, date: TEST_DATE });
+
+    expect(response.status).toBe(200);
+    expect(response.body[0]).toBe(localToUtcIso(TEST_DATE, "09:00:00", zone));
+  });
+
+  it("excludes a booking that ends exactly at the requested date's local midnight", async () => {
+    const ruleWeekday = DateTime.fromISO(TEST_DATE, { zone }).weekday;
+    await createAvailabilityRule(pool, providerId, ruleWeekday, "00:00:00", "02:00:00");
+
+    const localMidnightUtc = localToUtcIso(TEST_DATE, "00:00:00", zone);
+    const beforeMidnightUtc = new Date(new Date(localMidnightUtc).getTime() - 5 * 60_000).toISOString();
+    // Entirely on the previous local day, ending exactly at this day's local midnight.
+    await createBookingAt(pool, providerId, serviceId, beforeMidnightUtc, localMidnightUtc, "pending");
+
+    const response = await request(app)
+      .get("/availability")
+      .query({ service_id: serviceId, date: TEST_DATE });
+
+    expect(response.status).toBe(200);
+    // Unaffected by the previous-day booking -- same as the no-booking baseline
+    // (00:00-02:00 = 120 min, 75-min slots, 15-min granularity -> 4 slots).
+    expect(response.body).toHaveLength(4);
+    expect(response.body[0]).toBe(localMidnightUtc);
+  });
+
+  it("includes a booking that starts exactly at the requested date's local midnight", async () => {
+    const ruleWeekday = DateTime.fromISO(TEST_DATE, { zone }).weekday;
+    await createAvailabilityRule(pool, providerId, ruleWeekday, "00:00:00", "02:00:00");
+
+    const localMidnightUtc = localToUtcIso(TEST_DATE, "00:00:00", zone);
+    const bookingEndUtc = new Date(new Date(localMidnightUtc).getTime() + 30 * 60_000).toISOString();
+    await createBookingAt(pool, providerId, serviceId, localMidnightUtc, bookingEndUtc, "pending");
+
+    const response = await request(app)
+      .get("/availability")
+      .query({ service_id: serviceId, date: TEST_DATE });
+
+    expect(response.status).toBe(200);
+    // The booking consumes the first 30 min of the 120-min window, leaving a
+    // 90-min free interval -- one 75-min slot starting where the booking ends.
+    expect(response.body).not.toContain(localMidnightUtc);
+    expect(response.body).toContain(bookingEndUtc);
   });
 });

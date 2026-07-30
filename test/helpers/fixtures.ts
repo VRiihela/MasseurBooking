@@ -33,6 +33,15 @@ export async function resetAndSeed(
   return { providerId, serviceId };
 }
 
+export async function createInactiveService(pool: Pool, providerId: string): Promise<string> {
+  const result = await pool.query<{ id: string }>(
+    `INSERT INTO services (provider_id, duration_minutes, buffer_before_minutes, buffer_after_minutes, active)
+     VALUES ($1, 60, 0, 15, false) RETURNING id`,
+    [providerId],
+  );
+  return result.rows[0].id;
+}
+
 export async function createAvailabilityRule(
   pool: Pool,
   providerId: string,
