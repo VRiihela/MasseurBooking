@@ -29,6 +29,11 @@ Masseur Booking System
 - Deployment environment: single-region PaaS (e.g. Render, Fly.io, Railway)
 
 ## Notes for AI Agents
+- Workflow:
+  - After the Architect stage, before Implementer runs, pause and wait for explicit
+    go-ahead if this task introduces a pattern not yet used elsewhere in the codebase
+    (check `documents/concepts-learned.md`) -- this is a deliberate learning checkpoint,
+    not just a review gate.
 - Critical design decisions:
   - All timestamps are stored in UTC; convert to local time only at display time. Never store naive/local timestamps.
   - Bookings are created with status `pending`, not `confirmed`. The masseur must manually confirm or decline each request — nothing auto-confirms.
