@@ -1,11 +1,24 @@
 import { Router } from "express";
 import { ValidationError } from "../errors.js";
-import { adminRateLimit, bookingCreationRateLimit } from "../middleware/rateLimit.js";
+import {
+  adminRateLimit,
+  bookingCreationRateLimit,
+  customerBookingActionRateLimit,
+  customerBookingViewRateLimit,
+} from "../middleware/rateLimit.js";
 import { requireMasseurAuth } from "../middleware/requireMasseurAuth.js";
-import { confirmBooking, createBooking, declineBooking } from "../services/bookingService.js";
-import { bookingIdParamSchema } from "../validation/bookingIdParam.js";
+import {
+  cancelBookingForCustomer,
+  confirmBooking,
+  createBooking,
+  declineBooking,
+  getBookingForCustomer,
+  rescheduleBookingForCustomer,
+} from "../services/bookingService.js";
+import { bookingIdParamSchema, bookingTokenQuerySchema } from "../validation/bookingIdParam.js";
 import { createBookingSchema } from "../validation/bookingSchema.js";
 import { declineBookingSchema } from "../validation/declineBookingSchema.js";
+import { rescheduleBookingSchema } from "../validation/rescheduleBookingSchema.js";
 
 export const bookingsRouter = Router();
 
@@ -80,6 +93,87 @@ bookingsRouter.post(
         status: booking.status,
         cancelled_at: booking.cancelledAt?.toISOString() ?? null,
         cancellation_reason: booking.cancellationReason,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
+function parseBookingIdAndToken(req: {
+  params: unknown;
+  query: unknown;
+}): { id: string; token: string } {
+  const parsedParams = bookingIdParamSchema.safeParse(req.params);
+  if (!parsedParams.success) {
+    throw new ValidationError(parsedParams.error.issues[0]?.message ?? "Invalid booking id");
+  }
+
+  const parsedQuery = bookingTokenQuerySchema.safeParse(req.query);
+  if (!parsedQuery.success) {
+    throw new ValidationError(parsedQuery.error.issues[0]?.message ?? "Invalid token");
+  }
+
+  return { id: parsedParams.data.id, token: parsedQuery.data.token };
+}
+
+bookingsRouter.get("/bookings/:id", customerBookingViewRateLimit, async (req, res, next) => {
+  try {
+    const { id, token } = parseBookingIdAndToken(req);
+
+    const view = await getBookingForCustomer(id, token);
+
+    res.status(200).json({
+      id: view.id,
+      status: view.status,
+      service_name: view.serviceName,
+      start_at_local: view.startAtLocal,
+      end_at_local: view.endAtLocal,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+bookingsRouter.post(
+  "/bookings/:id/cancel",
+  customerBookingActionRateLimit,
+  async (req, res, next) => {
+    try {
+      const { id, token } = parseBookingIdAndToken(req);
+
+      const booking = await cancelBookingForCustomer(id, token);
+
+      res.status(200).json({
+        id: booking.id,
+        status: booking.status,
+        cancelled_at: booking.cancelledAt?.toISOString() ?? null,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
+bookingsRouter.post(
+  "/bookings/:id/reschedule",
+  customerBookingActionRateLimit,
+  async (req, res, next) => {
+    try {
+      const { id, token } = parseBookingIdAndToken(req);
+
+      const parsedBody = rescheduleBookingSchema.safeParse(req.body);
+      if (!parsedBody.success) {
+        throw new ValidationError(parsedBody.error.issues[0]?.message ?? "Invalid request body");
+      }
+
+      const booking = await rescheduleBookingForCustomer(id, token, parsedBody.data.newStartAt);
+
+      res.status(201).json({
+        id: booking.id,
+        status: booking.status,
+        start_at: booking.startAt.toISOString(),
+        end_at: booking.endAt.toISOString(),
       });
     } catch (error) {
       next(error);

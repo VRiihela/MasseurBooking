@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { BookingEmailPayload } from "../../src/db/types.js";
+import type { BookingEmailPayload, MasseurBookingChangeEmailPayload } from "../../src/db/types.js";
 import { renderEmail } from "../../src/services/emailTemplates.js";
 
 const basePayload: BookingEmailPayload = {
@@ -8,6 +8,7 @@ const basePayload: BookingEmailPayload = {
   customerName: "Jane Doe",
   serviceName: "Deep Tissue Massage",
   startAtLocal: "Monday, August 17, 2026 at 9:00 AM EDT",
+  manageUrl: "https://example.com/bookings/booking-1?token=abc123",
 };
 
 describe("renderEmail", () => {
@@ -18,6 +19,7 @@ describe("renderEmail", () => {
     expect(message.body).toContain("Jane Doe");
     expect(message.body).toContain(basePayload.startAtLocal);
     expect(message.body).toContain(basePayload.bookingId);
+    expect(message.body).toContain(basePayload.manageUrl);
   });
 
   it("renders booking_confirmed using only payload fields", () => {
@@ -55,5 +57,41 @@ describe("renderEmail", () => {
       cancellationReason: "no longer available\r\nX-Injected: true",
     });
     expect(message.body).not.toMatch(/\r\n/);
+  });
+
+  it("renders booking_cancelled_by_customer using only payload fields", () => {
+    const message = renderEmail("booking_cancelled_by_customer", {
+      ...basePayload,
+      cancellationReason: "cancelled by customer",
+    });
+    expect(message.to).toBe(basePayload.customerEmail);
+    expect(message.subject.toLowerCase()).toContain("cancelled");
+    expect(message.body).toContain(basePayload.manageUrl);
+  });
+
+  it("renders masseur_booking_change_notice with the cancellation reason", () => {
+    const payload: MasseurBookingChangeEmailPayload = {
+      adminEmail: "admin@example.com",
+      bookingId: "booking-1",
+      serviceName: "Deep Tissue Massage",
+      startAtLocal: "Monday, August 17, 2026 at 9:00 AM EDT",
+      cancellationReason: "rescheduled by customer",
+    };
+    const message = renderEmail("masseur_booking_change_notice", payload);
+    expect(message.to).toBe("admin@example.com");
+    expect(message.body).toContain("Deep Tissue Massage");
+    expect(message.body).toContain("Reason: rescheduled by customer");
+  });
+
+  it("renders masseur_booking_change_notice without a reason line when none is present", () => {
+    const payload: MasseurBookingChangeEmailPayload = {
+      adminEmail: "admin@example.com",
+      bookingId: "booking-1",
+      serviceName: "Deep Tissue Massage",
+      startAtLocal: "Monday, August 17, 2026 at 9:00 AM EDT",
+      cancellationReason: null,
+    };
+    const message = renderEmail("masseur_booking_change_notice", payload);
+    expect(message.body).not.toContain("Reason:");
   });
 });

@@ -27,6 +27,33 @@ function backoffDelayMs(attempts: number): number {
 }
 
 /**
+ * Job types whose payload carries a raw, still-usable access token embedded
+ * in a URL, and the field name that holds it. Stripped once the job is
+ * marked 'sent' so a later read of the email_jobs outbox table can never
+ * hand out a still-valid link -- covers both the customer booking-management
+ * links (007) and 006's masseur_login_link, which had the same
+ * live-credential-in-outbox exposure. Types not listed here have no such
+ * field and pass through unchanged.
+ */
+const SENSITIVE_PAYLOAD_FIELD: Partial<Record<EmailJobType, string>> = {
+  booking_request_received: "manageUrl",
+  booking_confirmed: "manageUrl",
+  booking_declined: "manageUrl",
+  booking_cancelled_by_customer: "manageUrl",
+  masseur_login_link: "loginUrl",
+};
+
+function redactSensitiveField(type: EmailJobType, payload: EmailJobPayload): EmailJobPayload {
+  const field = SENSITIVE_PAYLOAD_FIELD[type];
+  if (!field) {
+    return payload;
+  }
+  const record = { ...(payload as unknown as Record<string, unknown>) };
+  delete record[field];
+  return record as unknown as EmailJobPayload;
+}
+
+/**
  * Claims up to `batchSize` jobs via UPDATE ... WHERE id IN (SELECT ... FOR
  * UPDATE SKIP LOCKED). This is a single statement, so it's atomic and
  * commits on its own (no explicit BEGIN/COMMIT, no checked-out client held
@@ -53,10 +80,15 @@ export async function claimQueuedJobs(batchSize: number): Promise<ClaimedEmailJo
   return result.rows;
 }
 
-export async function markJobSent(id: string): Promise<void> {
+export async function markJobSent(
+  id: string,
+  type: EmailJobType,
+  payload: EmailJobPayload,
+): Promise<void> {
+  const redactedPayload = redactSensitiveField(type, payload);
   await getPool().query(
-    `UPDATE email_jobs SET status = 'sent', sent_at = now(), claimed_at = NULL WHERE id = $1`,
-    [id],
+    `UPDATE email_jobs SET status = 'sent', sent_at = now(), claimed_at = NULL, payload = $2::jsonb WHERE id = $1`,
+    [id, JSON.stringify(redactedPayload)],
   );
 }
 
@@ -91,7 +123,7 @@ export async function processJobsOnce(sender: EmailSender, batchSize = 10): Prom
       try {
         const message = renderEmail(job.type, job.payload);
         await sender.send(message);
-        await markJobSent(job.id);
+        await markJobSent(job.id, job.type, job.payload);
       } catch (error) {
         // Log only the job id and error -- never the full rendered email
         // body, which carries customer PII.

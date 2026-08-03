@@ -2,6 +2,7 @@ import type {
   BookingEmailPayload,
   EmailJobPayload,
   EmailJobType,
+  MasseurBookingChangeEmailPayload,
   MasseurLoginLinkEmailPayload,
 } from "../db/types.js";
 import type { EmailMessage } from "./emailSender.js";
@@ -27,6 +28,8 @@ function renderRequestReceived(payload: BookingEmailPayload): EmailMessage {
 We've received your request for ${payload.serviceName} on ${payload.startAtLocal}.
 The masseur will confirm or decline it shortly -- you'll get another email as soon as they do.
 
+Manage your booking: ${payload.manageUrl}
+
 Booking reference: ${payload.bookingId}`,
   };
 }
@@ -39,6 +42,8 @@ function renderConfirmed(payload: BookingEmailPayload): EmailMessage {
     body: `Hi ${name},
 
 Good news -- your ${payload.serviceName} appointment on ${payload.startAtLocal} is confirmed.
+
+Manage your booking: ${payload.manageUrl}
 
 Booking reference: ${payload.bookingId}`,
   };
@@ -55,6 +60,38 @@ function renderDeclined(payload: BookingEmailPayload): EmailMessage {
     body: `Hi ${name},
 
 Unfortunately your request for ${payload.serviceName} on ${payload.startAtLocal} could not be accommodated.
+${reasonLine}
+Manage your booking: ${payload.manageUrl}
+
+Booking reference: ${payload.bookingId}`,
+  };
+}
+
+function renderCancelledByCustomer(payload: BookingEmailPayload): EmailMessage {
+  const name = sanitizeForSubject(payload.customerName);
+  return {
+    to: payload.customerEmail,
+    subject: `Your ${payload.serviceName} booking has been cancelled`,
+    body: `Hi ${name},
+
+As requested, your ${payload.serviceName} booking on ${payload.startAtLocal} has been cancelled.
+
+Manage your booking: ${payload.manageUrl}
+
+Booking reference: ${payload.bookingId}`,
+  };
+}
+
+function renderMasseurBookingChangeNotice(payload: MasseurBookingChangeEmailPayload): EmailMessage {
+  const reasonLine = payload.cancellationReason
+    ? `Reason: ${sanitizeForSubject(payload.cancellationReason)}\n`
+    : "";
+  return {
+    to: payload.adminEmail,
+    subject: `Schedule change -- ${payload.serviceName} on ${payload.startAtLocal}`,
+    body: `A customer just changed a booking on your schedule.
+
+${payload.serviceName} on ${payload.startAtLocal} is no longer booked -- that slot is now free.
 ${reasonLine}
 Booking reference: ${payload.bookingId}`,
   };
@@ -80,6 +117,10 @@ export function renderEmail(type: EmailJobType, payload: EmailJobPayload): Email
       return renderConfirmed(payload as BookingEmailPayload);
     case "booking_declined":
       return renderDeclined(payload as BookingEmailPayload);
+    case "booking_cancelled_by_customer":
+      return renderCancelledByCustomer(payload as BookingEmailPayload);
+    case "masseur_booking_change_notice":
+      return renderMasseurBookingChangeNotice(payload as MasseurBookingChangeEmailPayload);
     case "masseur_login_link":
       return renderMasseurLoginLink(payload as MasseurLoginLinkEmailPayload);
   }

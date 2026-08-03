@@ -44,3 +44,9 @@ export class BookingNotPendingError extends AppError {
     super(409, "Booking is not pending");
   }
 }
+
+export class BookingNotModifiableError extends AppError {
+  constructor() {
+    super(409, "Booking cannot be modified");
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "title": "Customer magic-link booking view, cancel, and reschedule",
+  "profile": "Node/TypeScript Backend",
+  "repo": "masseur-booking",
+  "tech": "Express, PostgreSQL (pg), node:crypto, reuses the email worker from 005 and the hashed-token pattern from 006",
+  "keyConstraints": "TypeScript strict, all timestamps stored/compared in UTC and shown to the customer in the provider's local timezone, no customer accounts or passwords -- token-based access only, same hashed-token discipline established in 006",
+  "description": "Task 001 deferred magic-link token generation ('assumed to belong to the email worker or a follow-up task'); this is that task. Customers currently have no way to view, cancel, or reschedule their own booking. Scope: (1) [Revised after Architect review] generate a fresh customer-access token per email sent for a booking (request received, confirmed, declined), each stored only as a hash in a new customer_booking_tokens table keyed by booking_id (no uniqueness constraint on booking_id -- a booking can have multiple simultaneously-valid token rows). Every token ever issued for a booking remains valid for that booking indefinitely (until the booking reaches a terminal state that blocks cancel/reschedule) -- no rotation, no invalidating older links when a newer email goes out; (2) GET /bookings/:id?token=... returns booking status, service name, and start/end time in the provider's local timezone when the token matches, and a generic 404/401 otherwise -- never distinguish 'wrong token' from 'wrong booking id' in the response; (3) POST /bookings/:id/cancel?token=... moves a pending/confirmed booking to cancelled, which already frees the slot via the existing availability/exclusion logic, and enqueues both a customer confirmation email and a masseur notification email (to ADMIN_EMAIL from 006) since the masseur's schedule just changed; (4) POST /bookings/:id/reschedule?token=... { newStartAt } -- confirmed by Architect: this cancels the existing booking (cancellation_reason = 'rescheduled by customer') and creates a brand-new pending booking at the requested time through the *exact same* concurrency-safe path as original booking creation (advisory lock, overlap check, exclusion constraint), rather than moving the existing row's start_at in place. Reasoning: reusing 001's already-tested creation logic is simpler and safer than writing new in-place-move logic, and it preserves the existing rule that every new time requires fresh masseur confirmation -- a customer silently moving an already-confirmed booking without re-approval was judged too risky. Since reschedule internally reuses the same cancel path as (3), it also enqueues the same masseur notification email as a plain cancel -- the old slot genuinely freed up and the masseur should know; the notification body includes cancellation_reason ('rescheduled by customer'), which is what distinguishes this from a customer who simply vanished, so no separate email template is needed. The new booking gets its own new token(s), minted per-email same as (1); (5) [Revised after Architect review] after a magic-link email is successfully sent, redact the raw token from the email_jobs.payload row, leaving only non-sensitive fields -- the payload doesn't need to hold a live credential once delivery is done. This redaction is generic across job types (a known sensitive-field name per job type, redacted once status becomes 'sent') and explicitly also covers 006's masseur_login_link payload, which has the same live-credential-in-outbox exposure and was missed when 006 was written; (6) the link's base URL comes from the APP_BASE_URL env var already added in 006 (src/config/auth.ts's loadAppBaseUrl()) -- not a new var, reuse as-is.",
+  "acceptanceCriteria": [
+    "A fresh customer-access token is generated and stored (hash only) for each email sent for a booking (request received, confirmed, declined, cancellation, reschedule); customer_booking_tokens has no uniqueness constraint on booking_id, and every token issued for a booking remains valid until that booking reaches a terminal state that blocks cancel/reschedule -- no rotation or invalidation of older links when a newer email is sent",
+    "GET /bookings/:id?token=... returns booking status, service name, and start/end time in the provider's local timezone only when the token matches that booking id; any mismatch returns a generic 404/401 without revealing which check failed",
+    "POST /bookings/:id/cancel?token=... transitions a pending or confirmed booking to cancelled, and the freed slot is immediately reflected by GET /availability (reusing existing 003 logic, no new availability code needed)",
+    "Cancelling on an already-cancelled or completed booking returns 409, not a silent success",
+    "On successful customer cancellation, both a customer-facing confirmation email and a masseur-facing notification email (to ADMIN_EMAIL) are enqueued",
+    "POST /bookings/:id/reschedule?token=... cancels the old booking and creates a new pending booking at the requested time via the same transaction+advisory-lock+exclusion-constraint path as original booking creation -- verified by a concurrency test where two reschedule/booking requests race for the same new slot and exactly one succeeds",
+    "Reschedule also enqueues the masseur-facing notification email (same as a plain cancel), with cancellation_reason = 'rescheduled by customer' included in its body",
+    "The new booking created by a reschedule has its own new customer token(s); any token issued for the old (now-cancelled) booking can still view it but cannot cancel/reschedule it again",
+    "All three endpoints (view, cancel, reschedule) are rate-limited",
+    "After any email whose payload carries a raw token is marked 'sent' -- including 006's masseur_login_link -- the raw token is redacted from that email_jobs row's payload, leaving only non-sensitive fields",
+    "The magic-link URL embedded in emails is built from the existing APP_BASE_URL environment variable (added in 006), not hardcoded"
+  ],
+  "relevantFilePaths": [
+    "src/db/migrations/007_customer_booking_tokens.sql",
+    "src/services/bookingTokenService.ts",
+    "src/services/bookingService.ts",
+    "src/services/emailQueueService.ts",
+    "src/services/emailTemplates.ts",
+    "src/services/emailWorker.ts",
+    "src/middleware/rateLimit.ts",
+    "src/routes/bookings.ts",
+    "src/validation/rescheduleBookingSchema.ts",
+    "src/errors.ts",
+    "src/db/types.ts",
+    ".env.example",
+    "test/unit/bookingTokenService.test.ts",
+    "test/integration/bookings.customerManagement.test.ts",
+    "test/integration/bookings.reschedule.concurrency.test.ts"
+  ],
+  "securityConsiderations": "Tokens are high-entropy (crypto.randomBytes) and stored only as hashes, matching 006's discipline -- a DB read alone must never yield a usable credential. Never let a response distinguish 'booking doesn't exist' from 'token is wrong for this booking' -- same generic error either way, to prevent booking-id enumeration paired with token guessing. Rate-limit all three endpoints. Redact the raw token from email_jobs.payload once sent -- generically, across all job types that carry one (including 006's masseur_login_link), so a later read of that outbox table doesn't hand out a still-valid link. A booking can have multiple simultaneously-valid tokens (one minted per email); this is an intentional widening of the credential surface versus a single reused token, accepted because every token still only ever resolves that one booking id, and each is independently high-entropy and hash-stored -- it does not weaken the enumeration/guessing protections above. A reschedule must not let a customer bypass masseur confirmation -- the new booking always starts 'pending', never 'confirmed', regardless of what the original booking's status was."
+}

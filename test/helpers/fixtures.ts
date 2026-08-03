@@ -13,6 +13,7 @@ export async function resetAndSeed(
   await pool.query("DELETE FROM admin_login_tokens");
   await pool.query("DELETE FROM admin_sessions");
   await pool.query("DELETE FROM email_jobs");
+  await pool.query("DELETE FROM customer_booking_tokens");
   await pool.query("DELETE FROM bookings");
   await pool.query("DELETE FROM availability_exceptions");
   await pool.query("DELETE FROM availability_rules");
@@ -132,6 +133,23 @@ export async function mintExpiredLoginToken(pool: Pool): Promise<string> {
   await pool.query(
     `INSERT INTO admin_login_tokens (token_hash, expires_at) VALUES ($1, now() - interval '1 minute')`,
     [tokenHash],
+  );
+
+  return rawToken;
+}
+
+/**
+ * Mints a customer_booking_tokens row directly, bypassing the email flow,
+ * for tests that just need a valid token for an existing booking rather than
+ * to exercise token issuance itself.
+ */
+export async function mintCustomerBookingToken(pool: Pool, bookingId: string): Promise<string> {
+  const rawToken = randomBytes(32).toString("hex");
+  const tokenHash = createHash("sha256").update(rawToken).digest("hex");
+
+  await pool.query(
+    `INSERT INTO customer_booking_tokens (booking_id, token_hash) VALUES ($1, $2)`,
+    [bookingId, tokenHash],
   );
 
   return rawToken;

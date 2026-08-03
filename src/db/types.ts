@@ -60,6 +60,8 @@ export type EmailJobType =
   | "booking_request_received"
   | "booking_confirmed"
   | "booking_declined"
+  | "booking_cancelled_by_customer"
+  | "masseur_booking_change_notice"
   | "masseur_login_link";
 
 export type EmailJobStatus = "queued" | "sending" | "sent" | "failed";
@@ -84,6 +86,7 @@ export interface BookingEmailPayload {
   serviceName: string;
   startAtLocal: string;
   cancellationReason?: string | null;
+  manageUrl: string;
 }
 
 export interface MasseurLoginLinkEmailPayload {
@@ -91,4 +94,21 @@ export interface MasseurLoginLinkEmailPayload {
   loginUrl: string;
 }
 
-export type EmailJobPayload = BookingEmailPayload | MasseurLoginLinkEmailPayload;
+/**
+ * Sent to ADMIN_EMAIL whenever a customer action (cancel, or the cancel half
+ * of a reschedule) frees a slot on the masseur's schedule. No token/link --
+ * the masseur acts through their own authenticated admin session, not a
+ * customer magic link.
+ */
+export interface MasseurBookingChangeEmailPayload {
+  adminEmail: string;
+  bookingId: string;
+  serviceName: string;
+  startAtLocal: string;
+  cancellationReason: string | null;
+}
+
+export type EmailJobPayload =
+  | BookingEmailPayload
+  | MasseurLoginLinkEmailPayload
+  | MasseurBookingChangeEmailPayload;

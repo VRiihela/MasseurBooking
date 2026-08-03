@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+process.env.APP_BASE_URL = "https://example.com";
+
 const queryMock = vi.fn();
 
 vi.mock("../../src/db/pool.js", () => ({

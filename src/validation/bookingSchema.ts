@@ -1,19 +1,21 @@
 import { z } from "zod";
 
-const strictUtcTimestamp = z
+// Shared by createBookingSchema's start_at and rescheduleBookingSchema's
+// newStartAt -- messages stay field-name-agnostic so they read correctly at
+// either call site.
+export const strictUtcTimestamp = z
   .string()
   .refine(
     (value) => /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|\+00:00)$/.test(value),
     {
-      message:
-        "start_at must be an ISO 8601 timestamp with an explicit UTC offset (Z or +00:00)",
+      message: "must be an ISO 8601 timestamp with an explicit UTC offset (Z or +00:00)",
     },
   )
   .refine((value) => !Number.isNaN(Date.parse(value)), {
-    message: "start_at must be a valid date",
+    message: "must be a valid date",
   })
   .refine((value) => new Date(value).getTime() > Date.now(), {
-    message: "start_at must be in the future",
+    message: "must be in the future",
   });
 
 export const createBookingSchema = z

@@ -142,5 +142,38 @@
       "test/integration/auth.test.ts",
       "test/integration/bookings.confirmDecline.test.ts"
     ]
+  },
+  {
+    "id": "007-customer-magic-link-management",
+    "title": "Customer magic-link booking view, cancel, and reschedule",
+    "profile": "Node/TypeScript Backend",
+    "timestamp": "2026-08-03T17:32:00Z",
+    "dodStatus": "pass",
+    "filesChanged": [
+      "agents/tasks/007-customer-magic-link-management.json",
+      "src/db/migrations/007_customer_booking_tokens.sql",
+      "src/services/bookingTokenService.ts",
+      "src/services/timeFormat.ts",
+      "src/services/bookingService.ts",
+      "src/services/emailQueueService.ts",
+      "src/services/emailTemplates.ts",
+      "src/services/emailWorker.ts",
+      "src/db/types.ts",
+      "src/errors.ts",
+      "src/middleware/rateLimit.ts",
+      "src/routes/bookings.ts",
+      "src/validation/bookingIdParam.ts",
+      "src/validation/bookingSchema.ts",
+      "src/validation/rescheduleBookingSchema.ts",
+      ".env.example",
+      "test/helpers/fixtures.ts",
+      "test/unit/bookingTokenService.test.ts",
+      "test/unit/bookingService.test.ts",
+      "test/unit/bookingService.confirmDecline.test.ts",
+      "test/unit/emailTemplates.test.ts",
+      "test/unit/emailWorker.test.ts",
+      "test/integration/bookings.customerManagement.test.ts",
+      "test/integration/bookings.reschedule.concurrency.test.ts"
+    ]
   }
 ]
