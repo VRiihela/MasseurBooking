@@ -21,7 +21,18 @@ export async function requireMasseurAuth(
     return;
   }
 
-  if (!(await validateSession(provided))) {
+  let valid: boolean;
+  try {
+    valid = await validateSession(provided);
+  } catch (error) {
+    // Express 4 does not catch rejections from an async middleware itself --
+    // without this, a DB error here would be an unhandled rejection and the
+    // request would hang instead of getting a 500.
+    next(error);
+    return;
+  }
+
+  if (!valid) {
     next(new UnauthorizedError());
     return;
   }

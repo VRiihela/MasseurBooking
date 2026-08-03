@@ -3,7 +3,7 @@ import request from "supertest";
 import { createApp } from "../../src/app.js";
 import { closePool, getPool } from "../../src/db/pool.js";
 import { requestLoginLink } from "../../src/services/adminAuthService.js";
-import { resetAndSeed } from "../helpers/fixtures.js";
+import { mintExpiredLoginToken, resetAndSeed } from "../helpers/fixtures.js";
 
 process.env.ADMIN_EMAIL = "admin@example.com";
 process.env.APP_BASE_URL = "https://admin.example.com";
@@ -80,6 +80,11 @@ describe("POST /auth/login-request", () => {
       .send({ email: "not-an-email" });
     expect(response.status).toBe(400);
   });
+
+  it("rejects a request body missing the email field with 400", async () => {
+    const response = await request(app).post("/auth/login-request").send({});
+    expect(response.status).toBe(400);
+  });
 });
 
 describe("GET /auth/login", () => {
@@ -96,6 +101,17 @@ describe("GET /auth/login", () => {
   it("rejects an unknown token with 401, not 500", async () => {
     const response = await request(app).get("/auth/login").query({ token: "unknown-token" });
     expect(response.status).toBe(401);
+  });
+
+  it("rejects an expired token with 401, not 500", async () => {
+    const token = await mintExpiredLoginToken(pool);
+    const response = await request(app).get("/auth/login").query({ token });
+    expect(response.status).toBe(401);
+  });
+
+  it("rejects a missing token query parameter with 400", async () => {
+    const response = await request(app).get("/auth/login");
+    expect(response.status).toBe(400);
   });
 
   it("rejects reusing the same login token a second time", async () => {

@@ -118,6 +118,25 @@ export async function mintAdminSession(
   return rawToken;
 }
 
+/**
+ * Inserts an already-expired admin_login_tokens row directly, for testing
+ * the "expired" branch of GET /auth/login distinctly from the "unknown
+ * token" branch -- both collapse to the same 401, but they're two different
+ * conditions in the same WHERE clause (expires_at > now() vs. used_at IS
+ * NULL), worth exercising separately.
+ */
+export async function mintExpiredLoginToken(pool: Pool): Promise<string> {
+  const rawToken = randomBytes(32).toString("hex");
+  const tokenHash = createHash("sha256").update(rawToken).digest("hex");
+
+  await pool.query(
+    `INSERT INTO admin_login_tokens (token_hash, expires_at) VALUES ($1, now() - interval '1 minute')`,
+    [tokenHash],
+  );
+
+  return rawToken;
+}
+
 export async function createPendingBooking(
   pool: Pool,
   providerId: string,

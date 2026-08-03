@@ -62,4 +62,13 @@ describe("requireMasseurAuth", () => {
     await requireMasseurAuth(makeRequest("Bearer stale-or-unknown-token"), makeResponse(), next);
     expect(next).toHaveBeenCalledWith(expect.any(UnauthorizedError));
   });
+
+  it("forwards to next(error) instead of throwing when the session lookup rejects", async () => {
+    const dbError = new Error("connection lost");
+    validateSessionMock.mockRejectedValueOnce(dbError);
+
+    await requireMasseurAuth(makeRequest("Bearer some-token"), makeResponse(), next);
+
+    expect(next).toHaveBeenCalledWith(dbError);
+  });
 });
