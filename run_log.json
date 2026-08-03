@@ -113,5 +113,34 @@
       "test/unit/emailWorker.test.ts",
       "test/integration/emailJobs.concurrency.test.ts"
     ]
+  },
+  {
+    "id": "006-masseur-magic-link-login",
+    "title": "Real masseur login (magic link) replacing the placeholder bearer token",
+    "profile": "Node/TypeScript Backend",
+    "timestamp": "2026-08-03T16:55:00Z",
+    "dodStatus": "pass",
+    "filesChanged": [
+      "agents/tasks/006-masseur-magic-link-login.json",
+      "src/db/migrations/006_admin_auth.sql",
+      "src/config/auth.ts",
+      "src/db/types.ts",
+      "src/services/adminAuthService.ts",
+      "src/services/emailQueueService.ts",
+      "src/services/emailTemplates.ts",
+      "src/services/emailWorker.ts",
+      "src/middleware/requireMasseurAuth.ts",
+      "src/middleware/rateLimit.ts",
+      "src/validation/loginRequestSchema.ts",
+      "src/validation/loginTokenQuerySchema.ts",
+      "src/routes/auth.ts",
+      "src/app.ts",
+      ".env.example",
+      "test/helpers/fixtures.ts",
+      "test/unit/adminAuthService.test.ts",
+      "test/unit/requireMasseurAuth.test.ts",
+      "test/integration/auth.test.ts",
+      "test/integration/bookings.confirmDecline.test.ts"
+    ]
   }
 ]
