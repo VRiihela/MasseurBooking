@@ -2,21 +2,20 @@ import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import request from "supertest";
 import { createApp } from "../../src/app.js";
 import { closePool, getPool } from "../../src/db/pool.js";
-import { createPendingBooking, resetAndSeed } from "../helpers/fixtures.js";
-
-process.env.MASSEUR_ADMIN_TOKEN = "test-admin-token";
+import { createPendingBooking, mintAdminSession, resetAndSeed } from "../helpers/fixtures.js";
 
 // Requires DATABASE_URL to point at a disposable Postgres DB with migrations
-// 001-003 already applied.
+// 001-006 already applied.
 const app = createApp();
 const pool = getPool();
-const authHeader = { Authorization: "Bearer test-admin-token" };
 
 let providerId: string;
 let serviceId: string;
+let authHeader: { Authorization: string };
 
 beforeEach(async () => {
   ({ providerId, serviceId } = await resetAndSeed(pool));
+  authHeader = { Authorization: `Bearer ${await mintAdminSession(pool)}` };
 });
 
 afterAll(async () => {

@@ -1,20 +1,14 @@
-import { createHash, timingSafeEqual } from "node:crypto";
 import type { NextFunction, Request, Response } from "express";
-import { loadMasseurAdminToken } from "../config/auth.js";
 import { UnauthorizedError } from "../errors.js";
+import { validateSession } from "../services/adminAuthService.js";
 
 const BEARER_PREFIX = "Bearer ";
 
-// Hash both sides to a fixed-length digest before comparing, so
-// timingSafeEqual never throws on a length mismatch and comparison time
-// doesn't vary with the length of the (attacker-controlled) provided token.
-function tokensMatch(provided: string, expected: string): boolean {
-  const providedDigest = createHash("sha256").update(provided).digest();
-  const expectedDigest = createHash("sha256").update(expected).digest();
-  return timingSafeEqual(providedDigest, expectedDigest);
-}
-
-export function requireMasseurAuth(req: Request, _res: Response, next: NextFunction): void {
+export async function requireMasseurAuth(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
   const header = req.header("authorization") ?? "";
   if (!header.startsWith(BEARER_PREFIX)) {
     next(new UnauthorizedError());
@@ -22,12 +16,18 @@ export function requireMasseurAuth(req: Request, _res: Response, next: NextFunct
   }
 
   const provided = header.slice(BEARER_PREFIX.length).trim();
-  const expected = loadMasseurAdminToken();
-
-  if (!provided || !tokensMatch(provided, expected)) {
+  if (!provided) {
     next(new UnauthorizedError());
     return;
   }
 
+  if (!(await validateSession(provided))) {
+    next(new UnauthorizedError());
+    return;
+  }
+
+  // Stashed so /auth/logout can revoke exactly the session that authenticated
+  // this request, not "some" session belonging to the admin.
+  res.locals.sessionToken = provided;
   next();
 }

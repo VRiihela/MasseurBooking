@@ -1,3 +1,4 @@
+import { createHash, randomBytes } from "node:crypto";
 import type { Pool } from "pg";
 
 /**
@@ -9,6 +10,8 @@ export async function resetAndSeed(
   pool: Pool,
   timezone = "UTC",
 ): Promise<{ providerId: string; serviceId: string }> {
+  await pool.query("DELETE FROM admin_login_tokens");
+  await pool.query("DELETE FROM admin_sessions");
   await pool.query("DELETE FROM email_jobs");
   await pool.query("DELETE FROM bookings");
   await pool.query("DELETE FROM availability_exceptions");
@@ -89,6 +92,30 @@ export async function createBookingAt(
   );
 
   return bookingResult.rows[0].id;
+}
+
+/**
+ * Mints a valid admin_sessions row directly, bypassing the full
+ * login-request/login round trip, for tests that just need an authenticated
+ * caller rather than to exercise the login flow itself (that's what
+ * test/integration/auth.test.ts is for).
+ */
+export async function mintAdminSession(
+  pool: Pool,
+  options: { expired?: boolean; revoked?: boolean } = {},
+): Promise<string> {
+  const rawToken = randomBytes(32).toString("hex");
+  const tokenHash = createHash("sha256").update(rawToken).digest("hex");
+  const expiresAt = options.expired ? "now() - interval '1 minute'" : "now() + interval '7 days'";
+  const revokedAt = options.revoked ? "now()" : "NULL";
+
+  await pool.query(
+    `INSERT INTO admin_sessions (token_hash, expires_at, revoked_at)
+     VALUES ($1, ${expiresAt}, ${revokedAt})`,
+    [tokenHash],
+  );
+
+  return rawToken;
 }
 
 export async function createPendingBooking(

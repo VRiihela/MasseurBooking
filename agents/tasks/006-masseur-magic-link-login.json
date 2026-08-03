@@ -1,0 +1,37 @@
+{
+  "title": "Real masseur login (magic link) replacing the placeholder bearer token",
+  "profile": "Node/TypeScript Backend",
+  "repo": "masseur-booking",
+  "tech": "Express, PostgreSQL (pg), node:crypto, reuses the email worker from 005",
+  "keyConstraints": "TypeScript strict, all timestamps stored/compared in UTC, no passwords are stored anywhere (magic link only), this task fully replaces MASSEUR_ADMIN_TOKEN -- it does not run alongside it, tokens are stored as hashes in the DB, never raw",
+  "description": "Task 002 shipped a static bearer token (MASSEUR_ADMIN_TOKEN) as an explicitly-flagged placeholder, since real masseur login didn't exist yet. context_template.md specifies email/password or magic link for the real mechanism; pick magic link -- it needs no password storage, no password-reset flow, and no credential-stuffing surface, and task 005 already built the email-sending infrastructure this can reuse directly. Scope: (1) provider is a v1 singleton, so the admin identity is a single ADMIN_EMAIL env var, not a new DB column -- no schema change to providers needed; (2) POST /auth/login-request { email } compares against ADMIN_EMAIL and always returns the same generic response regardless of match (never reveal whether the submitted email is the admin's); on a match, generate a high-entropy single-use token (crypto.randomBytes, hashed before storage), store it in a new admin_login_tokens table with a short expiry (~15 min), and enqueue a magic-link email via the existing email worker (new email_jobs type: masseur_login_link); (3) GET /auth/login?token=... looks up the token by hash, rejects if missing/expired/already used, marks it used, and issues a session: create a row in a new admin_sessions table (session token hashed, with its own longer expiry, e.g. 7 days) and return the raw session token once in the response body -- used as a Bearer token on subsequent admin requests, same shape as today so no client-side pattern change; (4) rewrite requireMasseurAuth to validate the bearer value against admin_sessions (hash + expiry + not-revoked check) instead of the static token; (5) POST /auth/logout revokes the current session; (6) remove MASSEUR_ADMIN_TOKEN and loadMasseurAdminToken entirely -- update .env.example to drop it and add ADMIN_EMAIL; (7) update the existing tests in requireMasseurAuth.test.ts and bookings.confirmDecline.test.ts that authenticate via the old static token so they go through the new login flow instead, and confirm they still pass.",
+  "acceptanceCriteria": [
+    "POST /auth/login-request with the configured ADMIN_EMAIL enqueues a masseur_login_link email job containing a single-use token; with any other email it returns the identical response (status, body, timing-insensitive) without enqueueing anything",
+    "The login token is stored in the DB only as a hash (e.g. SHA-256), never in plaintext, and expires after a short window (~15 minutes)",
+    "GET /auth/login with a valid, unused, unexpired token creates a new session and returns a session bearer token; using the same login token a second time fails with a clear error, even if the first use and a concurrent second use happen at nearly the same time (race-condition test, consistent with how 001 tested concurrent booking creation)",
+    "GET /auth/login with an expired or unknown token returns 401, not a 500 or a misleading message",
+    "The session token is stored in the DB only as a hash, has its own expiry (e.g. 7 days), and requireMasseurAuth rejects an expired or revoked session even if the raw token value is otherwise well-formed",
+    "POST /auth/logout revokes the current session; a subsequent request using that same session token is rejected with 401",
+    "All existing admin-authenticated routes (booking confirm/decline from 002) work unchanged from the caller's perspective -- still `Authorization: Bearer <token>` -- only the token's source and validation changed",
+    "MASSEUR_ADMIN_TOKEN and loadMasseurAdminToken are removed from the codebase entirely, not left as a fallback; .env.example reflects ADMIN_EMAIL as the new required variable",
+    "POST /auth/login-request is rate-limited to prevent inbox-bombing the admin's email or brute-forcing the email-match check",
+    "Existing tests that authenticated via the old static bearer token are updated to authenticate via the new login flow and continue to pass"
+  ],
+  "relevantFilePaths": [
+    "src/db/migrations/006_admin_auth.sql",
+    "src/config/auth.ts",
+    "src/services/adminAuthService.ts",
+    "src/services/emailQueueService.ts",
+    "src/middleware/requireMasseurAuth.ts",
+    "src/middleware/rateLimit.ts",
+    "src/routes/auth.ts",
+    "src/app.ts",
+    "src/db/types.ts",
+    ".env.example",
+    "test/unit/adminAuthService.test.ts",
+    "test/unit/requireMasseurAuth.test.ts",
+    "test/integration/auth.test.ts",
+    "test/integration/bookings.confirmDecline.test.ts"
+  ],
+  "securityConsiderations": "No passwords stored anywhere. Login tokens and session tokens are both high-entropy (crypto.randomBytes, not predictable) and stored only as hashes -- a DB read alone should never yield a usable credential. The login-request endpoint must not leak whether a submitted email matches the admin's, in response content, status code, or timing. Login tokens are single-use, enforced atomically (a claim/consume step guarded against a race, not a check-then-update with a gap). Sessions must be individually revocable via logout, and both token types must actually expire server-side, not just have a client-trusted expiry field. Rate-limit login-request. Keep the constant-time comparison discipline already established in requireMasseurAuth.ts for any raw-value comparisons that remain."
+}

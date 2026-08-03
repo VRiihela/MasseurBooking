@@ -1,5 +1,6 @@
 import express, { type NextFunction, type Request, type Response } from "express";
 import { AppError } from "./errors.js";
+import { authRouter } from "./routes/auth.js";
 import { availabilityRouter } from "./routes/availability.js";
 import { bookingsRouter } from "./routes/bookings.js";
 
@@ -8,6 +9,7 @@ export function createApp() {
   app.use(express.json());
   app.use(bookingsRouter);
   app.use(availabilityRouter);
+  app.use(authRouter);
 
   app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
     if (err instanceof AppError) {

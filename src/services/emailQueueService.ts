@@ -62,6 +62,16 @@ export async function enqueueBookingConfirmed(
   });
 }
 
+export async function enqueueMasseurLoginLink(
+  client: PoolClient,
+  params: { rawLoginToken: string; adminEmail: string; appBaseUrl: string },
+): Promise<void> {
+  await insertEmailJob(client, "masseur_login_link", {
+    adminEmail: params.adminEmail,
+    loginUrl: `${params.appBaseUrl}/auth/login?token=${params.rawLoginToken}`,
+  });
+}
+
 export async function enqueueBookingDeclined(
   client: PoolClient,
   booking: Booking,

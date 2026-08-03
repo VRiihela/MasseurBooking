@@ -1,4 +1,9 @@
-import type { BookingEmailPayload, EmailJobType } from "../db/types.js";
+import type {
+  BookingEmailPayload,
+  EmailJobPayload,
+  EmailJobType,
+  MasseurLoginLinkEmailPayload,
+} from "../db/types.js";
 import type { EmailMessage } from "./emailSender.js";
 
 /**
@@ -55,13 +60,27 @@ Booking reference: ${payload.bookingId}`,
   };
 }
 
-export function renderEmail(type: EmailJobType, payload: BookingEmailPayload): EmailMessage {
+function renderMasseurLoginLink(payload: MasseurLoginLinkEmailPayload): EmailMessage {
+  return {
+    to: payload.adminEmail,
+    subject: "Your masseur admin login link",
+    body: `Use the link below to log in. It expires in 15 minutes and can only be used once.
+
+${payload.loginUrl}
+
+If you didn't request this, you can safely ignore this email.`,
+  };
+}
+
+export function renderEmail(type: EmailJobType, payload: EmailJobPayload): EmailMessage {
   switch (type) {
     case "booking_request_received":
-      return renderRequestReceived(payload);
+      return renderRequestReceived(payload as BookingEmailPayload);
     case "booking_confirmed":
-      return renderConfirmed(payload);
+      return renderConfirmed(payload as BookingEmailPayload);
     case "booking_declined":
-      return renderDeclined(payload);
+      return renderDeclined(payload as BookingEmailPayload);
+    case "masseur_login_link":
+      return renderMasseurLoginLink(payload as MasseurLoginLinkEmailPayload);
   }
 }

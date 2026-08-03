@@ -1,7 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Request, Response } from "express";
 
-process.env.MASSEUR_ADMIN_TOKEN = "test-admin-token";
+const validateSessionMock = vi.fn();
+
+vi.mock("../../src/services/adminAuthService.js", () => ({
+  validateSession: validateSessionMock,
+}));
 
 const { requireMasseurAuth } = await import("../../src/middleware/requireMasseurAuth.js");
 const { UnauthorizedError } = await import("../../src/errors.js");
@@ -12,35 +16,50 @@ function makeRequest(authorization?: string): Request {
   } as unknown as Request;
 }
 
+function makeResponse(): Response {
+  return { locals: {} } as unknown as Response;
+}
+
 describe("requireMasseurAuth", () => {
   let next: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     next = vi.fn();
+    validateSessionMock.mockReset();
   });
 
-  it("calls next() with no error when the bearer token matches", () => {
-    requireMasseurAuth(makeRequest("Bearer test-admin-token"), {} as Response, next);
+  it("calls next() with no error and stashes the session token when the session is valid", async () => {
+    validateSessionMock.mockResolvedValueOnce(true);
+    const res = makeResponse();
+
+    await requireMasseurAuth(makeRequest("Bearer valid-session-token"), res, next);
+
     expect(next).toHaveBeenCalledWith();
+    expect(validateSessionMock).toHaveBeenCalledWith("valid-session-token");
+    expect(res.locals.sessionToken).toBe("valid-session-token");
   });
 
-  it("rejects a missing Authorization header", () => {
-    requireMasseurAuth(makeRequest(undefined), {} as Response, next);
+  it("rejects a missing Authorization header without checking the session", async () => {
+    await requireMasseurAuth(makeRequest(undefined), makeResponse(), next);
     expect(next).toHaveBeenCalledWith(expect.any(UnauthorizedError));
+    expect(validateSessionMock).not.toHaveBeenCalled();
   });
 
-  it("rejects a non-Bearer Authorization header", () => {
-    requireMasseurAuth(makeRequest("Basic dGVzdA=="), {} as Response, next);
+  it("rejects a non-Bearer Authorization header", async () => {
+    await requireMasseurAuth(makeRequest("Basic dGVzdA=="), makeResponse(), next);
     expect(next).toHaveBeenCalledWith(expect.any(UnauthorizedError));
+    expect(validateSessionMock).not.toHaveBeenCalled();
   });
 
-  it("rejects a wrong bearer token", () => {
-    requireMasseurAuth(makeRequest("Bearer wrong-token"), {} as Response, next);
+  it("rejects an empty bearer token without checking the session", async () => {
+    await requireMasseurAuth(makeRequest("Bearer "), makeResponse(), next);
     expect(next).toHaveBeenCalledWith(expect.any(UnauthorizedError));
+    expect(validateSessionMock).not.toHaveBeenCalled();
   });
 
-  it("rejects an empty bearer token", () => {
-    requireMasseurAuth(makeRequest("Bearer "), {} as Response, next);
+  it("rejects when the session is expired, revoked, or unknown", async () => {
+    validateSessionMock.mockResolvedValueOnce(false);
+    await requireMasseurAuth(makeRequest("Bearer stale-or-unknown-token"), makeResponse(), next);
     expect(next).toHaveBeenCalledWith(expect.any(UnauthorizedError));
   });
 });

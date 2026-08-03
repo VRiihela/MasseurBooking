@@ -1,5 +1,5 @@
 import { getPool } from "../db/pool.js";
-import type { BookingEmailPayload, EmailJobType } from "../db/types.js";
+import type { EmailJobPayload, EmailJobType } from "../db/types.js";
 import type { EmailSender } from "./emailSender.js";
 import { renderEmail } from "./emailTemplates.js";
 
@@ -11,14 +11,14 @@ const BACKOFF_CAP_MS = 30 * 60_000;
 export interface ClaimedEmailJob {
   id: string;
   type: EmailJobType;
-  payload: BookingEmailPayload;
+  payload: EmailJobPayload;
   attempts: number;
 }
 
 interface EmailJobRow {
   id: string;
   type: EmailJobType;
-  payload: BookingEmailPayload;
+  payload: EmailJobPayload;
   attempts: number;
 }
 

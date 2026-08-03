@@ -59,7 +59,8 @@ export interface Booking {
 export type EmailJobType =
   | "booking_request_received"
   | "booking_confirmed"
-  | "booking_declined";
+  | "booking_declined"
+  | "masseur_login_link";
 
 export type EmailJobStatus = "queued" | "sending" | "sent" | "failed";
 
@@ -84,3 +85,10 @@ export interface BookingEmailPayload {
   startAtLocal: string;
   cancellationReason?: string | null;
 }
+
+export interface MasseurLoginLinkEmailPayload {
+  adminEmail: string;
+  loginUrl: string;
+}
+
+export type EmailJobPayload = BookingEmailPayload | MasseurLoginLinkEmailPayload;

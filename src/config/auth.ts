@@ -7,10 +7,18 @@ function requireEnv(name: string): string {
 }
 
 /**
- * Placeholder admin credential until real masseur login (email/password or
- * magic link, per context_template.md) exists. A single static token shared
- * by whoever holds it -- not per-admin, not revocable individually.
+ * The masseur admin is a v1 singleton identified by a config value, not a
+ * DB row -- there is no admins table to look this up against.
  */
-export function loadMasseurAdminToken(): string {
-  return requireEnv("MASSEUR_ADMIN_TOKEN");
+export function loadAdminEmail(): string {
+  return requireEnv("ADMIN_EMAIL");
+}
+
+/**
+ * Used to build the absolute magic-link URL sent by email. Trailing
+ * slash(es) stripped so callers can join paths with a single leading slash
+ * without producing a doubled "//".
+ */
+export function loadAppBaseUrl(): string {
+  return requireEnv("APP_BASE_URL").replace(/\/+$/, "");
 }
