@@ -1,0 +1,34 @@
+{
+  "title": "Admin CRUD for Service, AvailabilityRule, AvailabilityException, and Provider profile",
+  "profile": "Node/TypeScript Backend",
+  "repo": "masseur-booking",
+  "tech": "Express, PostgreSQL (pg), zod, builds on the session auth from 006",
+  "keyConstraints": "TypeScript strict, all timestamps/dates handled with the same UTC and ISO-weekday (1=Monday..7=Sunday, matching Luxon's DateTime#weekday) conventions already established in tasks 003/004 -- do not introduce a different weekday numbering. All /admin/* routes require the session-based masseur auth from 006, not the old removed static token.",
+  "description": "Services, availability rules, and availability exceptions currently only exist via test fixtures -- there is no way for the masseur to actually configure what they offer or when they work. This blocks the frontend admin dashboard, which needs these endpoints to have anything to manage. Scope: (1) the `services` table is missing `name` and `price` columns (migration 001 only added the columns task 001 needed for booking math) -- add them via migration; (2) GET/POST/PATCH /admin/services -- create and edit services, no DELETE, deactivate via the existing `active` flag instead (consistent with how booking creation and availability computation already filter on `active = true`); (3) GET/POST/PATCH/DELETE /admin/availability-rules and GET/POST/DELETE /admin/availability-exceptions, validated server-side (weekday 1-7, end_time > start_time, valid date/type) rather than relying on the DB CHECK constraints to surface raw errors; (4) GET/PATCH /admin/provider to view/update the singleton provider's name and timezone. Explicit assumption, flag for Architect to confirm or push back on: provider bootstrapping (creating the one Provider row) stays outside this API -- there's exactly one provider in v1, no self-signup flow, so the row is still a one-time manual seed, not something POST /admin/provider creates. Two explicit non-goals worth stating because they're easy to get wrong: editing or deactivating a Service must never change already-existing Booking rows (a booking's start_at/end_at was fixed at creation time from the service definition at that moment, and must not be recomputed later), and deleting or editing an AvailabilityRule/AvailabilityException must never touch or invalidate existing bookings -- both only affect what can be newly booked going forward.",
+  "acceptanceCriteria": [
+    "Migration adds `name` (required) and `price` columns to `services` without breaking any existing rows",
+    "GET/POST/PATCH /admin/services manage services; there is no DELETE endpoint -- removing a service from bookability is done via PATCH setting active = false",
+    "GET/POST/PATCH/DELETE /admin/availability-rules manage weekly rules; weekday is validated as 1-7 matching the ISO/Luxon convention already used in tasks 003/004, rejected otherwise with 400",
+    "GET/POST/DELETE /admin/availability-exceptions manage one-off overrides; type must be 'blocked' or 'open', date must be a valid calendar date, end_time must be after start_time -- all rejected with a clean 400 from the API layer, not a raw Postgres constraint error",
+    "GET/PATCH /admin/provider views and updates the provider's name and timezone; there is no POST (creation) endpoint on this resource",
+    "All /admin/* routes reject requests without a valid session from the task 006 login flow with 401",
+    "A regression test confirms that editing a Service's duration_minutes or buffers after a booking already exists does not change that booking's stored start_at/end_at",
+    "A regression test confirms that deleting an AvailabilityRule or AvailabilityException that an existing pending/confirmed booking currently falls within does not cancel, modify, or otherwise touch that booking -- it only affects what GET /availability returns going forward",
+    "Admin routes are rate-limited consistent with the existing admin endpoints from 002/006"
+  ],
+  "relevantFilePaths": [
+    "src/db/migrations/008_service_display_fields.sql",
+    "src/routes/adminServices.ts",
+    "src/routes/adminAvailability.ts",
+    "src/routes/adminProvider.ts",
+    "src/validation/adminServiceSchema.ts",
+    "src/validation/adminAvailabilitySchema.ts",
+    "src/services/adminCatalogService.ts",
+    "src/db/types.ts",
+    "src/app.ts",
+    "test/integration/admin.services.test.ts",
+    "test/integration/admin.availability.test.ts",
+    "test/integration/admin.provider.test.ts"
+  ],
+  "securityConsiderations": "All /admin/* routes go through requireMasseurAuth (task 006's session validation), not a new or parallel auth mechanism. Validate all input server-side (weekday range, date format, time ordering, price/duration positivity) rather than trusting the client or relying only on DB constraints to catch bad data -- constraint violations should never surface as raw 500s. No new external-facing surface here (no customer-facing routes in this task), so the main risk is authorization (making sure every new route is actually behind the auth middleware) and input validation, not new attack surface."
+}

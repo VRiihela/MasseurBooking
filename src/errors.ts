@@ -50,3 +50,15 @@ export class BookingNotModifiableError extends AppError {
     super(409, "Booking cannot be modified");
   }
 }
+
+export class AvailabilityRuleNotFoundError extends AppError {
+  constructor() {
+    super(404, "Availability rule not found");
+  }
+}
+
+export class AvailabilityExceptionNotFoundError extends AppError {
+  constructor() {
+    super(404, "Availability exception not found");
+  }
+}

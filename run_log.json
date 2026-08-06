@@ -175,5 +175,32 @@
       "test/integration/bookings.customerManagement.test.ts",
       "test/integration/bookings.reschedule.concurrency.test.ts"
     ]
+  },
+  {
+    "id": "008-admin-service-availability-crud",
+    "title": "Admin CRUD for Service, AvailabilityRule, AvailabilityException, and Provider profile",
+    "profile": "Node/TypeScript Backend",
+    "timestamp": "2026-08-06T21:00:00Z",
+    "dodStatus": "pass",
+    "filesChanged": [
+      "agents/tasks/008-admin-service-availability-crud.json",
+      "src/db/migrations/008_service_display_fields.sql",
+      "src/services/adminCatalogService.ts",
+      "src/routes/adminServices.ts",
+      "src/routes/adminAvailability.ts",
+      "src/routes/adminProvider.ts",
+      "src/validation/adminServiceSchema.ts",
+      "src/validation/adminAvailabilitySchema.ts",
+      "src/validation/adminProviderSchema.ts",
+      "src/validation/idParamSchema.ts",
+      "src/db/types.ts",
+      "src/errors.ts",
+      "src/app.ts",
+      "test/helpers/fixtures.ts",
+      "test/unit/adminCatalogService.test.ts",
+      "test/integration/admin.services.test.ts",
+      "test/integration/admin.availability.test.ts",
+      "test/integration/admin.provider.test.ts"
+    ]
   }
 ]

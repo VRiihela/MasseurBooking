@@ -29,6 +29,7 @@ export interface Service {
   id: string;
   providerId: string;
   name: string;
+  price: number | null;
   durationMinutes: number;
   bufferBeforeMinutes: number;
   bufferAfterMinutes: number;

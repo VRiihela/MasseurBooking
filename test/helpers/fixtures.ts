@@ -28,8 +28,8 @@ export async function resetAndSeed(
   const providerId = providerResult.rows[0].id;
 
   const serviceResult = await pool.query<{ id: string }>(
-    `INSERT INTO services (provider_id, duration_minutes, buffer_before_minutes, buffer_after_minutes, active)
-     VALUES ($1, 60, 0, 15, true) RETURNING id`,
+    `INSERT INTO services (provider_id, name, price, duration_minutes, buffer_before_minutes, buffer_after_minutes, active)
+     VALUES ($1, 'Deep Tissue Massage', 60.00, 60, 0, 15, true) RETURNING id`,
     [providerId],
   );
   const serviceId = serviceResult.rows[0].id;
@@ -39,8 +39,8 @@ export async function resetAndSeed(
 
 export async function createInactiveService(pool: Pool, providerId: string): Promise<string> {
   const result = await pool.query<{ id: string }>(
-    `INSERT INTO services (provider_id, duration_minutes, buffer_before_minutes, buffer_after_minutes, active)
-     VALUES ($1, 60, 0, 15, false) RETURNING id`,
+    `INSERT INTO services (provider_id, name, price, duration_minutes, buffer_before_minutes, buffer_after_minutes, active)
+     VALUES ($1, 'Inactive Service', 60.00, 60, 0, 15, false) RETURNING id`,
     [providerId],
   );
   return result.rows[0].id;
@@ -52,11 +52,12 @@ export async function createAvailabilityRule(
   weekday: number,
   startTime: string,
   endTime: string,
-): Promise<void> {
-  await pool.query(
-    `INSERT INTO availability_rules (provider_id, weekday, start_time, end_time) VALUES ($1, $2, $3, $4)`,
+): Promise<string> {
+  const result = await pool.query<{ id: string }>(
+    `INSERT INTO availability_rules (provider_id, weekday, start_time, end_time) VALUES ($1, $2, $3, $4) RETURNING id`,
     [providerId, weekday, startTime, endTime],
   );
+  return result.rows[0].id;
 }
 
 export async function createAvailabilityException(
@@ -66,11 +67,12 @@ export async function createAvailabilityException(
   type: "blocked" | "open",
   startTime: string,
   endTime: string,
-): Promise<void> {
-  await pool.query(
-    `INSERT INTO availability_exceptions (provider_id, date, type, start_time, end_time) VALUES ($1, $2, $3, $4, $5)`,
+): Promise<string> {
+  const result = await pool.query<{ id: string }>(
+    `INSERT INTO availability_exceptions (provider_id, date, type, start_time, end_time) VALUES ($1, $2, $3, $4, $5) RETURNING id`,
     [providerId, date, type, startTime, endTime],
   );
+  return result.rows[0].id;
 }
 
 export async function createBookingAt(
