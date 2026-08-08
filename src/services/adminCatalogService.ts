@@ -28,7 +28,7 @@ import type { CreateServiceInput, UpdateServiceInput } from "../validation/admin
  * never seeded, a deploy-time problem, not a client-reachable one, so it's
  * left as a plain thrown error rather than a dedicated AppError.
  */
-async function loadSingletonProviderId(): Promise<string> {
+export async function loadSingletonProviderId(): Promise<string> {
   const result = await getPool().query<{ id: string }>(`SELECT id FROM providers LIMIT 1`);
   const row = result.rows[0];
   if (!row) {
@@ -107,6 +107,22 @@ export async function listServices(): Promise<Service[]> {
   const providerId = await loadSingletonProviderId();
   const result = await getPool().query<ServiceRow>(
     `SELECT ${SERVICE_COLUMNS} FROM services WHERE provider_id = $1 ORDER BY name`,
+    [providerId],
+  );
+  return result.rows.map(toService);
+}
+
+/**
+ * Backs the public GET /services -- unlike listServices (admin, sees
+ * everything), this only ever returns bookable services. The route layer is
+ * responsible for narrowing the response to the public-safe field subset;
+ * this still returns the full Service so it stays a single source of truth
+ * for "what a service is."
+ */
+export async function listActiveServices(): Promise<Service[]> {
+  const providerId = await loadSingletonProviderId();
+  const result = await getPool().query<ServiceRow>(
+    `SELECT ${SERVICE_COLUMNS} FROM services WHERE provider_id = $1 AND active = true ORDER BY name`,
     [providerId],
   );
   return result.rows.map(toService);

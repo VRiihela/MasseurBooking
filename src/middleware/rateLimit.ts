@@ -38,6 +38,18 @@ export const availabilityRateLimit = rateLimit({
   message: { error: "Too many requests. Please try again shortly." },
 });
 
+// GET /services -- public, read-only, same risk profile and values as
+// availabilityRateLimit but its own independent bucket, so a burst of
+// service-catalog scraping can't eat into a legitimate customer's
+// availability-checking budget mid-booking-flow (or vice versa).
+export const publicServicesRateLimit = rateLimit({
+  windowMs: 60_000,
+  limit: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many requests. Please try again shortly." },
+});
+
 // GET /bookings/:id -- public, token-gated read. Capped against brute-forcing
 // the token (paired with booking-id guessing), same reasoning as
 // availabilityRateLimit but slightly tighter since a token is a credential.

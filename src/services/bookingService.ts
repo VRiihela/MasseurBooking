@@ -9,6 +9,7 @@ import {
   SlotUnavailableError,
 } from "../errors.js";
 import type { CreateBookingInput } from "../validation/bookingSchema.js";
+import { loadSingletonProviderId } from "./adminCatalogService.js";
 import { hashToken, mintCustomerToken } from "./bookingTokenService.js";
 import {
   enqueueBookingCancelledByCustomer,
@@ -335,6 +336,76 @@ export async function declineBooking(id: string, reason: string | undefined): Pr
     );
     return booking;
   });
+}
+
+export interface AdminBookingListItem {
+  id: string;
+  status: BookingStatus;
+  serviceName: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  startAtLocal: string;
+  endAtLocal: string;
+  createdAt: Date;
+}
+
+interface AdminBookingListRow {
+  id: string;
+  status: BookingStatus;
+  start_at: Date;
+  end_at: Date;
+  created_at: Date;
+  service_name: string;
+  customer_name: string;
+  customer_email: string;
+  customer_phone: string;
+  provider_timezone: string;
+}
+
+/**
+ * Backs GET /admin/bookings -- the masseur's only way to discover which
+ * booking ids are pending confirmation (no email fires on new booking
+ * creation, per task 001), plus a general list/history view. WHERE/ORDER BY
+ * are plain and parameterized so a LIMIT/cursor can be added later without
+ * restructuring the query.
+ */
+export async function listBookingsForAdmin(
+  status?: BookingStatus,
+): Promise<AdminBookingListItem[]> {
+  const providerId = await loadSingletonProviderId();
+  const params: unknown[] = [providerId];
+  let statusClause = "";
+  if (status) {
+    params.push(status);
+    statusClause = ` AND b.status = $${params.length}`;
+  }
+
+  const result = await getPool().query<AdminBookingListRow>(
+    `SELECT b.id, b.status, b.start_at, b.end_at, b.created_at,
+            s.name AS service_name,
+            c.name AS customer_name, c.email AS customer_email, c.phone AS customer_phone,
+            p.timezone AS provider_timezone
+     FROM bookings b
+     JOIN services s ON s.id = b.service_id
+     JOIN customers c ON c.id = b.customer_id
+     JOIN providers p ON p.id = b.provider_id
+     WHERE b.provider_id = $1${statusClause}
+     ORDER BY b.start_at`,
+    params,
+  );
+
+  return result.rows.map((row) => ({
+    id: row.id,
+    status: row.status,
+    serviceName: row.service_name,
+    customerName: row.customer_name,
+    customerEmail: row.customer_email,
+    customerPhone: row.customer_phone,
+    startAtLocal: formatLocalTime(row.start_at, row.provider_timezone),
+    endAtLocal: formatLocalTime(row.end_at, row.provider_timezone),
+    createdAt: row.created_at,
+  }));
 }
 
 /**

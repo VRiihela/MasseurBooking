@@ -202,5 +202,24 @@
       "test/integration/admin.availability.test.ts",
       "test/integration/admin.provider.test.ts"
     ]
+  },
+  {
+    "id": "009-public-services-admin-bookings-list",
+    "title": "Public service listing and admin booking list/pending-queue view",
+    "profile": "Node/TypeScript Backend",
+    "timestamp": "2026-08-08T18:10:00Z",
+    "dodStatus": "pass",
+    "filesChanged": [
+      "agents/tasks/009-public-services-admin-bookings-list.json",
+      "src/routes/services.ts",
+      "src/routes/bookings.ts",
+      "src/services/adminCatalogService.ts",
+      "src/services/bookingService.ts",
+      "src/validation/adminBookingsQuerySchema.ts",
+      "src/middleware/rateLimit.ts",
+      "src/app.ts",
+      "test/integration/services.public.test.ts",
+      "test/integration/admin.bookingsList.test.ts"
+    ]
   }
 ]

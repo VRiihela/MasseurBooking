@@ -13,8 +13,10 @@ import {
   createBooking,
   declineBooking,
   getBookingForCustomer,
+  listBookingsForAdmin,
   rescheduleBookingForCustomer,
 } from "../services/bookingService.js";
+import { adminBookingsQuerySchema } from "../validation/adminBookingsQuerySchema.js";
 import { bookingIdParamSchema, bookingTokenQuerySchema } from "../validation/bookingIdParam.js";
 import { createBookingSchema } from "../validation/bookingSchema.js";
 import { declineBookingSchema } from "../validation/declineBookingSchema.js";
@@ -94,6 +96,38 @@ bookingsRouter.post(
         cancelled_at: booking.cancelledAt?.toISOString() ?? null,
         cancellation_reason: booking.cancellationReason,
       });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
+bookingsRouter.get(
+  "/admin/bookings",
+  requireMasseurAuth,
+  adminRateLimit,
+  async (req, res, next) => {
+    try {
+      const parsedQuery = adminBookingsQuerySchema.safeParse(req.query);
+      if (!parsedQuery.success) {
+        throw new ValidationError(parsedQuery.error.issues[0]?.message ?? "Invalid query parameters");
+      }
+
+      const bookings = await listBookingsForAdmin(parsedQuery.data.status);
+
+      res.status(200).json(
+        bookings.map((booking) => ({
+          id: booking.id,
+          status: booking.status,
+          service_name: booking.serviceName,
+          customer_name: booking.customerName,
+          customer_email: booking.customerEmail,
+          customer_phone: booking.customerPhone,
+          start_at_local: booking.startAtLocal,
+          end_at_local: booking.endAtLocal,
+          created_at: booking.createdAt.toISOString(),
+        })),
+      );
     } catch (error) {
       next(error);
     }

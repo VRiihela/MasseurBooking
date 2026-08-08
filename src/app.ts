@@ -6,6 +6,7 @@ import { adminServicesRouter } from "./routes/adminServices.js";
 import { authRouter } from "./routes/auth.js";
 import { availabilityRouter } from "./routes/availability.js";
 import { bookingsRouter } from "./routes/bookings.js";
+import { servicesRouter } from "./routes/services.js";
 import { AppError } from "./errors.js";
 
 // Postgres SQLSTATE class 23 = integrity constraint violation (CHECK, NOT
@@ -26,6 +27,7 @@ export function createApp() {
   app.use(adminServicesRouter);
   app.use(adminAvailabilityRouter);
   app.use(adminProviderRouter);
+  app.use(servicesRouter);
 
   app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
     if (err instanceof AppError) {

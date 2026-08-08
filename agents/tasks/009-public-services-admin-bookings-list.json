@@ -1,0 +1,30 @@
+{
+  "title": "Public service listing and admin booking list/pending-queue view",
+  "profile": "Node/TypeScript Backend",
+  "repo": "masseur-booking",
+  "tech": "Express, PostgreSQL (pg), builds on 006 (auth) and 008 (adminCatalogService)",
+  "keyConstraints": "TypeScript strict, all timestamps shown to the masseur in the provider's local timezone (matching the display convention already used elsewhere), no schema changes needed -- pure read/list endpoints over existing tables",
+  "description": "Backend tasks 001-008 cover creating, confirming, declining, cancelling, and rescheduling individual bookings by id, and admin CRUD for services/availability -- but nothing lists them. Two concrete gaps block frontend work: (1) there is no public, unauthenticated way for a customer to discover what services exist before booking one (only GET /admin/services exists, which requires a masseur session and returns inactive services too) -- the booking widget's service picker has nothing to call; (2) there is no way for the masseur to discover which booking ids are pending confirmation at all -- POST /bookings/:id/confirm and /decline exist, but nothing surfaces the id to act on. Given the established pattern (no masseur email fires on new booking creation, per task 001), a list view is the only way the masseur finds new requests. Scope: (1) GET /services -- public, no auth, returns only active=true services, with a narrower field set than the admin view (id, name, price, duration_minutes -- omit buffer_before/after_minutes, since buffers are an internal scheduling detail already folded into GET /availability's slot sizes and aren't meaningful to a customer picking a service); (2) GET /admin/bookings -- masseur-facing, authenticated, supports an optional ?status= filter (pending/confirmed/cancelled/completed), returns booking id, status, service name, customer name/email/phone, start/end time in the provider's local timezone, and created_at, ordered by start_at. No pagination for v1 given single-masseur volume, but keep the query shape (ORDER BY, WHERE) easy to extend with a LIMIT/cursor later.",
+  "acceptanceCriteria": [
+    "GET /services requires no authentication and returns only services where active = true",
+    "GET /services response fields are limited to id, name, price, duration_minutes -- no buffer_before_minutes/buffer_after_minutes, no provider_id",
+    "GET /admin/bookings requires a valid session (requireMasseurAuth) and returns 401 without one",
+    "GET /admin/bookings with no query params returns all bookings for the provider, ordered by start_at",
+    "GET /admin/bookings?status=pending returns only pending bookings -- this is the primary view the masseur uses to find new requests to confirm/decline",
+    "An invalid status query value (not one of pending/confirmed/cancelled/completed) returns 400, not a silently-empty or unfiltered result",
+    "Each booking in the admin list response includes customer name/email/phone (the masseur needs contact info for their own bookings -- this is not the customer-facing token-gated view from task 007, which correctly stays minimal)",
+    "Booking start/end times in the admin list response are shown in the provider's local timezone, consistent with how other admin-facing times are already displayed",
+    "Both new endpoints are rate-limited consistent with existing public (GET /availability) and admin (task 002/006/008) patterns respectively"
+  ],
+  "relevantFilePaths": [
+    "src/routes/services.ts",
+    "src/routes/bookings.ts",
+    "src/services/adminCatalogService.ts",
+    "src/services/bookingService.ts",
+    "src/validation/adminBookingsQuerySchema.ts",
+    "src/app.ts",
+    "test/integration/services.public.test.ts",
+    "test/integration/admin.bookingsList.test.ts"
+  ],
+  "securityConsiderations": "GET /services is intentionally public and must not leak anything beyond what's needed to pick a service to book -- no provider internals, no buffer/scheduling details. GET /admin/bookings exposes customer PII (name, email, phone) to the masseur, which is appropriate for their own bookings but confirms this route must never be reachable without requireMasseurAuth -- verify this explicitly with a 401 test, not just by inspecting the route wiring. No new external attack surface beyond the existing auth boundary."
+}
