@@ -1,0 +1,23 @@
+{
+  "title": "Restructure repo into /backend and /frontend",
+  "profile": "Node/TypeScript Backend",
+  "repo": "masseur-booking",
+  "tech": "File relocation only -- no framework/dependency changes",
+  "keyConstraints": "Zero functional/logic changes to any source file -- this task moves files and updates path references only. Every existing backend test must still pass after the move; task 010's completed frontend work must still build and run after moving to frontend/.",
+  "description": "Backend has lived at the repo root (src/, package.json, etc.) since task 001, from before frontend was ever in the picture. Task 010 (customer booking widget) is now done and its output lives in web/, sitting as an unconventional sibling to the backend's root-level src/. Now is the cheapest this restructuring will ever be: nothing is deployed, no CI is wired up (no .github/ directory exists), and only one frontend task exists so far. Scope: (1) move backend-specific files (src/, test/, package.json, package-lock.json, tsconfig.json, vitest.config.ts, eslint.config.js, .env.example) into a new backend/ folder; (2) move web/'s contents (task 010's finished output) into a new frontend/ folder -- a rename, not a rebuild; (3) project-wide files that are NOT backend-specific -- agents/ (the DevSecOps kit itself), documents/ (design doc), CLAUDE.md, reports/, run_log.json -- stay at the repo root, since they track the whole project, not just the backend; (4) regenerate node_modules fresh in each new location via npm install rather than literally moving it; (5) update agents/context_template.md's Architecture Overview to document the new layout, so future task Architects know backend/ and frontend/ are separate npm projects and to cd into the right one before running tooling commands; (6) no root-level package.json is being added -- each of backend/ and frontend/ remains an independent npm project, matching the project's 'prefer simple solutions' precedent over introducing npm workspaces tooling for a project this size.",
+  "acceptanceCriteria": [
+    "All backend source, tests, and config now live under backend/; running npm ci && npm test from inside backend/ passes with the full existing test suite (tasks 001-009), proving the move didn't silently break anything",
+    "Task 010's frontend work now lives under frontend/, unchanged except for its new location; its existing build/test commands still work from inside frontend/",
+    "agents/, documents/, CLAUDE.md, reports/, and run_log.json remain at the repo root -- not moved into backend/, since they're project-wide artifacts, and run_log.json's existing entries (including 010-customer-booking-widget, logged under the old web/ path) are left untouched as historical record, not rewritten",
+    "No source file's logic changed -- only file locations and path references (import paths, config paths, .env loading) that genuinely needed updating because of the move",
+    "Explicitly verified: no code relies on process.cwd() assuming it's the repo root in a way that silently broke when the natural working directory becomes backend/ or frontend/ -- relative-to-__dirname paths are unaffected since files moved together as a unit; process.cwd()-relative paths are the risk to check for",
+    "agents/context_template.md's Architecture Overview section documents the new backend/ + frontend/ layout",
+    "The old web/ folder and the old root-level backend file locations (old src/, old test/, etc.) are fully removed, not left behind alongside the new backend/frontend/ folders"
+  ],
+  "relevantFilePaths": [
+    "backend/ (new, from root src/, test/, package.json, etc.)",
+    "frontend/ (new, from web/)",
+    "agents/context_template.md"
+  ],
+  "securityConsiderations": "None beyond making sure .env.example / actual .env handling still resolves correctly from the new backend/ location -- a misresolved env path could silently fall back to missing config in a way that's easy to miss if only the happy path is tested after the move."
+}

@@ -252,5 +252,18 @@
       ".env.example",
       "test/integration/cors.test.ts"
     ]
+  },
+  {
+    "id": "011-monorepo-restructure",
+    "title": "Restructure repo into /backend and /frontend",
+    "profile": "Node/TypeScript Backend",
+    "timestamp": "2026-08-09T13:30:00Z",
+    "dodStatus": "pass",
+    "filesChanged": [
+      "agents/tasks/011-monorepo-restructure.json",
+      "agents/context_template.md",
+      "backend/ (renamed from root src/, test/, package.json, package-lock.json, tsconfig.json, vitest.config.ts, eslint.config.js, .env.example)",
+      "frontend/ (renamed from web/)"
+    ]
   }
 ]
