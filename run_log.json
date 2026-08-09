@@ -221,5 +221,36 @@
       "test/integration/services.public.test.ts",
       "test/integration/admin.bookingsList.test.ts"
     ]
+  },
+  {
+    "id": "010-customer-booking-widget",
+    "title": "Customer booking widget (service pick -> slot pick -> book -> confirmation)",
+    "profile": "React Frontend",
+    "timestamp": "2026-08-09T13:10:00Z",
+    "dodStatus": "pass",
+    "filesChanged": [
+      "agents/tasks/010-customer-booking-widget.json",
+      "web/package.json",
+      "web/tsconfig.json",
+      "web/vite.config.ts",
+      "web/index.html",
+      "web/eslint.config.js",
+      "web/.env.example",
+      "web/src/vite-env.d.ts",
+      "web/src/main.tsx",
+      "web/src/App.tsx",
+      "web/src/api/types.ts",
+      "web/src/api/client.ts",
+      "web/src/pages/BookingWidget.tsx",
+      "web/test/setup.ts",
+      "web/test/BookingWidget.test.tsx",
+      "src/config/cors.ts",
+      "src/app.ts",
+      "package.json",
+      "package-lock.json",
+      "vitest.config.ts",
+      ".env.example",
+      "test/integration/cors.test.ts"
+    ]
   }
 ]

@@ -1,3 +1,4 @@
+import cors from "cors";
 import express, { type NextFunction, type Request, type Response } from "express";
 import { DatabaseError } from "pg";
 import { adminAvailabilityRouter } from "./routes/adminAvailability.js";
@@ -7,6 +8,7 @@ import { authRouter } from "./routes/auth.js";
 import { availabilityRouter } from "./routes/availability.js";
 import { bookingsRouter } from "./routes/bookings.js";
 import { servicesRouter } from "./routes/services.js";
+import { loadCorsOrigin } from "./config/cors.js";
 import { AppError } from "./errors.js";
 
 // Postgres SQLSTATE class 23 = integrity constraint violation (CHECK, NOT
@@ -20,6 +22,21 @@ function isConstraintViolation(err: unknown): boolean {
 
 export function createApp() {
   const app = express();
+  const allowedOrigin = loadCorsOrigin();
+  app.use(
+    cors({
+      origin: (origin, callback) => {
+        // No Origin header means same-origin, curl, or a server-to-server
+        // call -- nothing to gate. Cross-origin browser requests must match
+        // the single configured origin exactly.
+        if (!origin || origin === allowedOrigin) {
+          callback(null, true);
+          return;
+        }
+        callback(null, false);
+      },
+    }),
+  );
   app.use(express.json());
   app.use(bookingsRouter);
   app.use(availabilityRouter);

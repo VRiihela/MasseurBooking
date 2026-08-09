@@ -1,0 +1,32 @@
+{
+  "title": "Customer booking widget (service pick -> slot pick -> book -> confirmation)",
+  "profile": "React Frontend",
+  "repo": "masseur-booking",
+  "tech": "React + TypeScript + Vite, consumes the existing REST API (GET /services, GET /availability, POST /bookings) -- no new backend endpoints, one small backend touch for CORS",
+  "keyConstraints": "TypeScript strict, no customer accounts/login anywhere in this flow (guest checkout only, matching the established design decision), API base URL configurable via env, not hardcoded",
+  "description": "First frontend task -- this is what makes the product launchable, since right now booking only works via raw HTTP calls. Scope is the new-booking flow only: browse services, pick a date/slot, submit the booking form, see a confirmation screen. The customer's magic-link manage page (view/cancel/reschedule an existing booking, from task 007's API) is deliberately out of scope here -- separate follow-up task, same slicing discipline the backend used (booking creation was task 001, customer self-management was a separate task 007). Explicit assumption, flag for Architect to confirm: there's no existing frontend scaffold in this repo -- backend lives at the repo root (src/, package.json). Add a new top-level web/ folder as a sibling to src/, with its own package.json/vite config, rather than restructuring the existing backend into a subfolder -- avoids touching nine tasks' worth of established backend paths for a cosmetic reorganization. Three backend-interaction details worth getting right, all directly tied to work already done on the backend: (1) GET /availability returns slot start times as UTC ISO strings for display in the customer's own browser-local timezone (per the design doc's non-functional section) -- but the exact UTC string must be passed through unmodified to POST /bookings's start_at, never reformatted or reconstructed client-side, to avoid any lossy round-trip through a different timezone library or string format; (2) POST /bookings can return 409 when someone else books the same slot in the gap between the customer viewing availability and submitting -- this is the concurrency protection from task 001 working as intended, not an error state to hide, so the UI needs a specific 'that slot was just taken' path that re-fetches availability, not a generic error message; (3) a successful POST /bookings returns status: pending, not confirmed -- the confirmation screen must say the request is awaiting the masseur's review, not imply the booking is final, matching the actual manual-confirmation semantics built in task 002.",
+  "acceptanceCriteria": [
+    "Customer can view active services (name, price, duration) fetched from GET /services",
+    "Selecting a service and a date shows available slots fetched from GET /availability?service_id&date, displayed in the customer's browser-local timezone -- not UTC, not the provider's timezone",
+    "Submitting the booking form calls POST /bookings with the exact UTC start_at string originally returned by GET /availability for the selected slot, unmodified",
+    "On success, the customer sees a screen that clearly states the request is pending the masseur's confirmation -- not a final 'you're booked' message",
+    "On a 409 response, the customer sees a specific 'that slot was just taken' message and the available slots are re-fetched, not a generic/raw error",
+    "Client-side validation on the booking form (name, email format, phone format) mirrors the backend's requirements for immediate feedback, understood as a UX nicety -- the backend remains the sole source of truth",
+    "The submit button is disabled or shows a loading state while the request is in flight, preventing accidental double submission",
+    "The API base URL is read from an environment variable, not hardcoded, so the same build can target different backend deployments",
+    "The Express backend has CORS configured to allow the frontend's configured origin specifically (env-driven allowlist), not a wildcard -- the one backend file touched in this task",
+    "No login, signup, or account concept appears anywhere in this flow"
+  ],
+  "relevantFilePaths": [
+    "web/package.json",
+    "web/vite.config.ts",
+    "web/src/main.tsx",
+    "web/src/App.tsx",
+    "web/src/api/client.ts",
+    "web/src/pages/BookingWidget.tsx",
+    "web/.env.example",
+    "web/test/BookingWidget.test.tsx",
+    "src/app.ts"
+  ],
+  "securityConsiderations": "CORS must allow only the configured frontend origin, never a wildcard, since the API also serves authenticated admin routes -- an overly permissive CORS policy would widen the attack surface for those even though this task's own flow is unauthenticated. No customer PII is stored client-side beyond what's in the form during submission (no localStorage of name/email/phone). Rely on the backend's existing input validation and rate limiting -- this task adds client-side validation for UX only, not as a security control."
+}
