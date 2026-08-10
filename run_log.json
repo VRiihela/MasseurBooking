@@ -265,5 +265,25 @@
       "backend/ (renamed from root src/, test/, package.json, package-lock.json, tsconfig.json, vitest.config.ts, eslint.config.js, .env.example)",
       "frontend/ (renamed from web/)"
     ]
+  },
+  {
+    "id": "012-masseur-admin-dashboard",
+    "title": "Masseur admin dashboard: login, pending-bookings queue, confirm/decline",
+    "profile": "React Frontend",
+    "timestamp": "2026-08-09T14:12:13.830Z",
+    "dodStatus": "pass",
+    "filesChanged": [
+      "agents/tasks/012-masseur-admin-dashboard.json",
+      "frontend/src/App.tsx",
+      "frontend/src/api/client.ts",
+      "frontend/src/api/types.ts",
+      "frontend/src/pages/AdminLoginRequest.tsx",
+      "frontend/src/pages/AdminLoginCallback.tsx",
+      "frontend/src/pages/AdminDashboard.tsx",
+      "frontend/test/setup.ts",
+      "frontend/test/AdminLoginRequest.test.tsx",
+      "frontend/test/AdminLoginCallback.test.tsx",
+      "frontend/test/AdminDashboard.test.tsx"
+    ]
   }
 ]
