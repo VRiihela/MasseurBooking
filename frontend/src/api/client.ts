@@ -1,13 +1,16 @@
 import type {
   AdminBooking,
   AdminBookingStatusFilter,
+  CancelBookingResponse,
   ConfirmBookingResponse,
   CreateBookingRequest,
   CreateBookingResponse,
+  CustomerBookingView,
   DeclineBookingResponse,
   ExchangeLoginTokenResponse,
   LoginRequestResponse,
   LogoutResponse,
+  RescheduleBookingResponse,
   Service,
 } from "./types";
 
@@ -120,5 +123,33 @@ export function declineBooking(id: string, reason?: string): Promise<DeclineBook
   return authRequest<DeclineBookingResponse>(`/bookings/${id}/decline`, {
     method: "POST",
     body: JSON.stringify(trimmedReason ? { reason: trimmedReason } : {}),
+  });
+}
+
+// These three take the raw customer token as a query param, not an
+// Authorization header -- it's a non-expiring, multi-use, possession-based
+// token (task 007), not a bearer session, and is never persisted to
+// localStorage like the masseur session token.
+export function getBookingForCustomer(id: string, token: string): Promise<CustomerBookingView> {
+  const params = new URLSearchParams({ token });
+  return request<CustomerBookingView>(`/bookings/${id}?${params.toString()}`);
+}
+
+export function cancelBooking(id: string, token: string): Promise<CancelBookingResponse> {
+  const params = new URLSearchParams({ token });
+  return request<CancelBookingResponse>(`/bookings/${id}/cancel?${params.toString()}`, {
+    method: "POST",
+  });
+}
+
+export function rescheduleBooking(
+  id: string,
+  token: string,
+  newStartAt: string,
+): Promise<RescheduleBookingResponse> {
+  const params = new URLSearchParams({ token });
+  return request<RescheduleBookingResponse>(`/bookings/${id}/reschedule?${params.toString()}`, {
+    method: "POST",
+    body: JSON.stringify({ newStartAt }),
   });
 }

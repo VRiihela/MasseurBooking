@@ -160,6 +160,7 @@ bookingsRouter.get("/bookings/:id", customerBookingViewRateLimit, async (req, re
     res.status(200).json({
       id: view.id,
       status: view.status,
+      service_id: view.serviceId,
       service_name: view.serviceName,
       start_at_local: view.startAtLocal,
       end_at_local: view.endAtLocal,

@@ -285,5 +285,35 @@
       "frontend/test/AdminLoginCallback.test.tsx",
       "frontend/test/AdminDashboard.test.tsx"
     ]
+  },
+  {
+    "id": "013-customer-manage-booking-page",
+    "title": "Customer manage-booking page (view, cancel, reschedule)",
+    "profile": "React Frontend",
+    "timestamp": "2026-08-11T19:20:00.000Z",
+    "dodStatus": "pass",
+    "filesChanged": [
+      "agents/tasks/013-customer-manage-booking-page.json",
+      "backend/src/services/bookingService.ts",
+      "backend/src/routes/bookings.ts",
+      "backend/test/integration/bookings.customerManagement.test.ts",
+      "frontend/src/App.tsx",
+      "frontend/src/api/client.ts",
+      "frontend/src/api/types.ts",
+      "frontend/src/pages/ManageBooking.tsx",
+      "frontend/test/ManageBooking.test.tsx"
+    ]
+  },
+  {
+    "id": "014-fix-reschedule-success-state",
+    "title": "Fix: manage-booking page shows the wrong (cancelled) booking after a successful reschedule",
+    "profile": "React Frontend",
+    "timestamp": "2026-08-11T21:05:00.000Z",
+    "dodStatus": "pass",
+    "filesChanged": [
+      "agents/tasks/014-fix-reschedule-success-state.json",
+      "frontend/src/pages/ManageBooking.tsx",
+      "frontend/test/ManageBooking.test.tsx"
+    ]
   }
 ]

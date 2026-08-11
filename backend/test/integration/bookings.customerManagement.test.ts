@@ -36,6 +36,7 @@ describe("GET /bookings/:id", () => {
     expect(response.body).toMatchObject({
       id: bookingId,
       status: "pending",
+      service_id: serviceId,
       service_name: expect.any(String),
     });
     expect(typeof response.body.start_at_local).toBe("string");

@@ -1,0 +1,22 @@
+{
+  "title": "Fix: manage-booking page shows the wrong (cancelled) booking after a successful reschedule",
+  "profile": "React Frontend",
+  "repo": "masseur-booking",
+  "tech": "React + TypeScript, Vite -- frontend-only fix, no backend change",
+  "keyConstraints": "Only touch frontend/src/pages/ManageBooking.tsx's handleConfirmReschedule/render and frontend/test/ManageBooking.test.tsx. No backend change is needed -- RescheduleBookingResponse (POST /bookings/:id/reschedule's response) already carries the new booking's id, status, start_at, and end_at; that's enough to show a correct success message without any new endpoint or field.",
+  "description": "Manual QA of task 013 surfaced a real bug (confirmed by reading bookingService.ts and ManageBooking.tsx together): rescheduleBookingForCustomer cancels the OLD booking and inserts a BRAND-NEW booking row with its own new id, minting a fresh customer_booking_tokens row for it and emailing that new manage link -- the new token is never returned in the POST /bookings/:id/reschedule response. But ManageBooking.tsx's handleConfirmReschedule, on success, calls loadBooking() which re-fetches getBookingForCustomer using the SAME bookingId and token from the URL (the OLD booking). Since the old booking is now genuinely, permanently cancelled (that's correct data, not corruption), the page ends up showing 'Status: cancelled' immediately after a successful reschedule -- with no indication anything good happened and no way to reach the new booking's manage page from this session (its token was only emailed, never returned to the browser). Fix: on a successful reschedule, stop calling loadBooking(). Instead, transition to a distinct success state that formats and displays the new start time from the reschedule response itself (reuse the existing formatSlotLocal helper) and tells the customer a new confirmation email with their updated manage link has been sent -- consistent with how the original booking-creation flow (BookingWidget.tsx) handles its own 'request received, check your email' confirmation state.",
+  "acceptanceCriteria": [
+    "After a successful reschedule, the page shows a distinct success state confirming the new date/time (formatted via formatSlotLocal on the reschedule response's start_at) -- it must not silently re-show the old, now-cancelled booking's view as if the reschedule did nothing",
+    "The success path makes no further getBookingForCustomer call using the old bookingId/token pair, since that pair permanently refers to a different (now-cancelled) booking",
+    "The success message clearly states that a new confirmation/manage-link email has been sent, matching actual backend behavior (the new booking's creation enqueues a fresh booking_request_received email)",
+    "The existing 409 disambiguation logic from task 013 (re-fetch-and-check-status to distinguish slot-taken from booking-became-non-modifiable) is unchanged and still only triggers on an actual 409 response, not on the success path",
+    "The Cancel flow (which correctly updates the SAME booking id in place, no bug there) is untouched and its existing behavior/tests remain green",
+    "frontend/test/ManageBooking.test.tsx is updated: the existing 'reschedule refetches and shows the read view' assertion (if present) is replaced with an assertion on the new success state; no test should assert that a cancelled/stale view is the expected post-reschedule outcome",
+    "npm test, npm run build, npm run lint, and tsc --noEmit all pass in frontend/"
+  ],
+  "relevantFilePaths": [
+    "frontend/src/pages/ManageBooking.tsx (handleConfirmReschedule and its render branch)",
+    "frontend/test/ManageBooking.test.tsx"
+  ],
+  "securityConsiderations": "None beyond what task 013 already covers -- this only changes what's displayed client-side after an already-authorized, already-completed mutation. No new data exposure: the new booking's id/start_at/end_at are already present in the existing reschedule response, just currently discarded in favor of an incorrect refetch."
+}

@@ -428,6 +428,7 @@ async function customerHasAccess(
 export interface CustomerBookingView {
   id: string;
   status: BookingStatus;
+  serviceId: string;
   serviceName: string;
   startAtLocal: string;
   endAtLocal: string;
@@ -438,6 +439,7 @@ interface CustomerBookingViewRow {
   status: BookingStatus;
   start_at: Date;
   end_at: Date;
+  service_id: string;
   service_name: string;
   provider_timezone: string;
 }
@@ -447,7 +449,7 @@ export async function getBookingForCustomer(
   rawToken: string,
 ): Promise<CustomerBookingView> {
   const result = await getPool().query<CustomerBookingViewRow>(
-    `SELECT b.id, b.status, b.start_at, b.end_at, s.name AS service_name, p.timezone AS provider_timezone
+    `SELECT b.id, b.status, b.start_at, b.end_at, s.id AS service_id, s.name AS service_name, p.timezone AS provider_timezone
      FROM customer_booking_tokens t
      JOIN bookings b ON b.id = t.booking_id
      JOIN services s ON s.id = b.service_id
@@ -464,6 +466,7 @@ export async function getBookingForCustomer(
   return {
     id: row.id,
     status: row.status,
+    serviceId: row.service_id,
     serviceName: row.service_name,
     startAtLocal: formatLocalTime(row.start_at, row.provider_timezone),
     endAtLocal: formatLocalTime(row.end_at, row.provider_timezone),
