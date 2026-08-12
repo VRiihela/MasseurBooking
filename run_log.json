@@ -315,5 +315,21 @@
       "frontend/src/pages/ManageBooking.tsx",
       "frontend/test/ManageBooking.test.tsx"
     ]
+  },
+  {
+    "id": "015-swap-postmark-for-resend",
+    "title": "Swap email provider: Postmark -> Resend",
+    "profile": "Node/TypeScript Backend",
+    "timestamp": "2026-08-12T10:55:00.000Z",
+    "dodStatus": "pass",
+    "filesChanged": [
+      "agents/tasks/015-swap-postmark-for-resend.json",
+      "backend/src/services/emailSender.ts",
+      "backend/src/config/email.ts",
+      "backend/src/server.ts",
+      "backend/.env.example",
+      "agents/context_template.md",
+      "backend/test/unit/emailSender.test.ts"
+    ]
   }
 ]

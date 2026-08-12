@@ -1,6 +1,6 @@
 import { createApp } from "./app.js";
 import { loadEmailConfig } from "./config/email.js";
-import { PostmarkEmailSender } from "./services/emailSender.js";
+import { ResendEmailSender } from "./services/emailSender.js";
 import { startEmailWorker } from "./services/emailWorker.js";
 
 const port = Number(process.env.PORT ?? 3000);
@@ -9,4 +9,4 @@ createApp().listen(port, () => {
 });
 
 const emailConfig = loadEmailConfig();
-startEmailWorker(new PostmarkEmailSender(emailConfig.postmarkApiToken, emailConfig.fromAddress));
+startEmailWorker(new ResendEmailSender(emailConfig.resendApiKey, emailConfig.fromAddress));

@@ -1,0 +1,28 @@
+{
+  "title": "Swap email provider: Postmark -> Resend",
+  "profile": "Node/TypeScript Backend",
+  "repo": "masseur-booking",
+  "tech": "Node/TypeScript backend, plain fetch (no SDK) -- matches PostmarkEmailSender's existing zero-dependency approach",
+  "keyConstraints": "This is a like-for-like swap behind the existing EmailSender interface (backend/src/services/emailSender.ts) -- emailQueueService.ts, emailWorker.ts, and emailTemplates.ts depend only on that interface and EmailMessage's shape ({to, subject, body}), never on Postmark specifically, so none of those three files should need to change. Reason for the swap: Postmark's own signup form rejects gmail/yahoo/other public-domain email addresses ('please use your work email on a private domain'), which blocks local development entirely -- confirmed live during setup, not a hypothetical. Resend's free tier requires no custom domain to test and has no such signup restriction. Remove PostmarkEmailSender entirely rather than leaving it as unused dead code -- it will not be reachable from anywhere once server.ts is updated, and keeping an unused, never-exercised HTTP-calling class around is a maintenance liability (could silently rot and mislead a future reader about which provider is actually active). Resend's send endpoint is POST https://api.resend.com/emails, Authorization: Bearer <RESEND_API_KEY>, JSON body { from, to, subject, text } -- use `text`, not `html`, since emailTemplates.ts's existing renderEmail output is deliberately plain text (see its own comment: 'Emails are plain text, not HTML, so there's no markup to escape').",
+  "description": "The email-sending integration needs a provider swap before any further real-email testing is possible. EmailSender is already a clean interface with exactly one implementation (PostmarkEmailSender, ~25 lines, a single fetch() call) -- ResendEmailSender should be the same shape: same constructor signature style (apiKey, fromAddress), same send(message) method, same error-handling discipline (on a non-ok response, throw an Error including the provider's status and response body text, but never the API key). Update config/email.ts to read RESEND_API_KEY instead of POSTMARK_API_TOKEN (EMAIL_FROM_ADDRESS is unchanged, just now used as Resend's 'from' field). Update server.ts to construct ResendEmailSender. Update backend/.env.example's POSTMARK_API_TOKEN line to RESEND_API_KEY with an accurate comment. Also correct a pre-existing gap in agents/context_template.md while touching this area: its 'External APIs' line currently reads 'none currently' under Security-Sensitive Areas, which was already inaccurate before this task (it never accounted for Postmark either) -- update it to name Resend as the one external API this system calls (outbound email sending), so future task Architects have an accurate picture.",
+  "acceptanceCriteria": [
+    "ResendEmailSender implements the existing EmailSender interface, POSTs to https://api.resend.com/emails with an Authorization: Bearer <RESEND_API_KEY> header and body { from, to, subject, text } mapping EmailMessage's to/subject/body fields (text, not html)",
+    "On a non-ok response, throws an Error including the provider's status code and response body text, matching PostmarkEmailSender's existing error shape -- the API key itself is never included in any thrown error or logged output",
+    "PostmarkEmailSender is removed entirely, not left as unused dead code",
+    "config/email.ts's loadEmailConfig() (or an equivalent renamed function/shape) reads RESEND_API_KEY and EMAIL_FROM_ADDRESS via requireEnv, same fail-fast-on-boot behavior as before",
+    "server.ts constructs ResendEmailSender instead of PostmarkEmailSender when starting the email worker",
+    "backend/.env.example: POSTMARK_API_TOKEN is replaced with RESEND_API_KEY, with an updated comment; EMAIL_FROM_ADDRESS's comment references Resend instead of Postmark",
+    "agents/context_template.md's 'External APIs' line under Security-Sensitive Areas is corrected to name Resend as the one external API in use (outbound email), rather than 'none currently'",
+    "New unit test(s) for ResendEmailSender (no test existed for PostmarkEmailSender either) -- mock fetch, assert the request URL/headers/body shape on success, and assert the error path throws with status+detail and never includes the API key in the thrown message",
+    "npm test, npm run build, npm run lint, and tsc --noEmit all pass in backend/"
+  ],
+  "relevantFilePaths": [
+    "backend/src/services/emailSender.ts",
+    "backend/src/config/email.ts",
+    "backend/src/server.ts",
+    "backend/.env.example",
+    "agents/context_template.md",
+    "backend/test/unit/emailSender.test.ts (new)"
+  ],
+  "securityConsiderations": "Same discipline as the Postmark implementation it replaces: never log or include RESEND_API_KEY in thrown errors or console output. RESEND_API_KEY is a secret with the same handling as the token it replaces -- present in backend/.env (gitignored, local-only) and backend/.env.example (placeholder only). No new attack surface: this replaces one already-reviewed outbound HTTP call to a trusted third-party email API with another; the EmailSender interface boundary means emailWorker.ts's retry/backoff/outbox/claim logic (already reviewed in task 005) is completely unaffected by this swap."
+}

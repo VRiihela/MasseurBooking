@@ -1,5 +1,5 @@
 export interface EmailConfig {
-  postmarkApiToken: string;
+  resendApiKey: string;
   fromAddress: string;
 }
 
@@ -13,7 +13,7 @@ function requireEnv(name: string): string {
 
 export function loadEmailConfig(): EmailConfig {
   return {
-    postmarkApiToken: requireEnv("POSTMARK_API_TOKEN"),
+    resendApiKey: requireEnv("RESEND_API_KEY"),
     fromAddress: requireEnv("EMAIL_FROM_ADDRESS"),
   };
 }

@@ -8,34 +8,33 @@ export interface EmailSender {
   send(message: EmailMessage): Promise<void>;
 }
 
-const POSTMARK_SEND_URL = "https://api.postmarkapp.com/email";
+const RESEND_SEND_URL = "https://api.resend.com/emails";
 
-export class PostmarkEmailSender implements EmailSender {
+export class ResendEmailSender implements EmailSender {
   constructor(
-    private readonly apiToken: string,
+    private readonly apiKey: string,
     private readonly fromAddress: string,
   ) {}
 
   async send(message: EmailMessage): Promise<void> {
-    const response = await fetch(POSTMARK_SEND_URL, {
+    const response = await fetch(RESEND_SEND_URL, {
       method: "POST",
       headers: {
-        Accept: "application/json",
+        Authorization: `Bearer ${this.apiKey}`,
         "Content-Type": "application/json",
-        "X-Postmark-Server-Token": this.apiToken,
       },
       body: JSON.stringify({
-        From: this.fromAddress,
-        To: message.to,
-        Subject: message.subject,
-        TextBody: message.body,
+        from: this.fromAddress,
+        to: message.to,
+        subject: message.subject,
+        text: message.body,
       }),
     });
 
     if (!response.ok) {
-      // Never include the API token here -- only the provider's own status/detail.
+      // Never include the API key here -- only the provider's own status/detail.
       const detail = await response.text().catch(() => "");
-      throw new Error(`Postmark send failed with status ${response.status}: ${detail}`);
+      throw new Error(`Resend send failed with status ${response.status}: ${detail}`);
     }
   }
 }

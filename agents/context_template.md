@@ -15,7 +15,7 @@ Masseur Booking System
 ## Security-Sensitive Areas
 - Authentication: masseur admin login only, via single-use magic-link tokens and hashed sessions (task 006). Customers never authenticate — they get a signed, unguessable magic-link token per booking instead (task 007).
 - Authorization: admin endpoints require a valid session (task 006). Customer endpoints must be scoped strictly to the booking the token was issued for — no way to enumerate or access other customers' bookings.
-- External APIs: none currently. Calendar sync (Google Calendar API / Microsoft Graph) is deferred — see `documents/masseur-booking-system-design.md` appendix. Do not add OAuth/calendar integration unless a task explicitly reintroduces it.
+- External APIs: Resend (outbound transactional email, `backend/src/services/emailSender.ts`'s `ResendEmailSender`) is the one external API this system calls, as of task 015 (swapped from Postmark). Calendar sync (Google Calendar API / Microsoft Graph) is deferred — see `documents/masseur-booking-system-design.md` appendix. Do not add OAuth/calendar integration unless a task explicitly reintroduces it.
 - Data processing: Customer PII is name, email, phone only — no payment data is collected or stored anywhere in this system (payment happens in person).
 
 ## CI / Tooling
