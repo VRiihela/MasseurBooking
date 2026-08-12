@@ -8,6 +8,7 @@ import {
 } from "../middleware/rateLimit.js";
 import { requireMasseurAuth } from "../middleware/requireMasseurAuth.js";
 import {
+  cancelBookingForAdmin,
   cancelBookingForCustomer,
   confirmBooking,
   createBooking,
@@ -89,6 +90,38 @@ bookingsRouter.post(
       }
 
       const booking = await declineBooking(parsedParams.data.id, parsedBody.data.reason);
+
+      res.status(200).json({
+        id: booking.id,
+        status: booking.status,
+        cancelled_at: booking.cancelledAt?.toISOString() ?? null,
+        cancellation_reason: booking.cancellationReason,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
+bookingsRouter.post(
+  "/admin/bookings/:id/cancel",
+  requireMasseurAuth,
+  adminRateLimit,
+  async (req, res, next) => {
+    try {
+      const parsedParams = bookingIdParamSchema.safeParse(req.params);
+      if (!parsedParams.success) {
+        throw new ValidationError(
+          parsedParams.error.issues[0]?.message ?? "Invalid booking id",
+        );
+      }
+
+      const parsedBody = declineBookingSchema.safeParse(req.body ?? {});
+      if (!parsedBody.success) {
+        throw new ValidationError(parsedBody.error.issues[0]?.message ?? "Invalid request body");
+      }
+
+      const booking = await cancelBookingForAdmin(parsedParams.data.id, parsedBody.data.reason);
 
       res.status(200).json({
         id: booking.id,

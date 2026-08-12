@@ -331,5 +331,28 @@
       "agents/context_template.md",
       "backend/test/unit/emailSender.test.ts"
     ]
+  },
+  {
+    "id": "016-masseur-cancel-confirmed-booking",
+    "title": "Masseur-initiated cancellation of an already-confirmed booking",
+    "profile": "Node/TypeScript Backend",
+    "timestamp": "2026-08-12T13:20:00.000Z",
+    "dodStatus": "pass",
+    "filesChanged": [
+      "agents/tasks/016-masseur-cancel-confirmed-booking.json",
+      "backend/src/errors.ts",
+      "backend/src/db/types.ts",
+      "backend/src/services/bookingService.ts",
+      "backend/src/services/emailTemplates.ts",
+      "backend/src/services/emailQueueService.ts",
+      "backend/src/services/emailWorker.ts",
+      "backend/src/routes/bookings.ts",
+      "backend/test/unit/bookingService.confirmDecline.test.ts",
+      "backend/test/unit/emailWorker.test.ts",
+      "backend/test/integration/bookings.cancelByAdmin.test.ts",
+      "frontend/src/api/client.ts",
+      "frontend/src/pages/AdminDashboard.tsx",
+      "frontend/test/AdminDashboard.test.tsx"
+    ]
   }
 ]

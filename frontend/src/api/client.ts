@@ -126,6 +126,17 @@ export function declineBooking(id: string, reason?: string): Promise<DeclineBook
   });
 }
 
+// Masseur cancelling a booking they already confirmed -- distinct from the
+// customer's own token-based cancelBooking below, which uses a completely
+// different auth model (possession of a magic-link token, not a session).
+export function cancelBookingAsAdmin(id: string, reason?: string): Promise<DeclineBookingResponse> {
+  const trimmedReason = reason?.trim();
+  return authRequest<DeclineBookingResponse>(`/admin/bookings/${id}/cancel`, {
+    method: "POST",
+    body: JSON.stringify(trimmedReason ? { reason: trimmedReason } : {}),
+  });
+}
+
 // These three take the raw customer token as a query param, not an
 // Authorization header -- it's a non-expiring, multi-use, possession-based
 // token (task 007), not a bearer session, and is never persisted to

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   ApiError,
+  cancelBookingAsAdmin,
   clearStoredSessionToken,
   confirmBooking,
   declineBooking,
@@ -22,6 +23,8 @@ export function AdminDashboard({ onSessionEnded }: Props) {
   const [actionError, setActionError] = useState<string | null>(null);
   const [decliningId, setDecliningId] = useState<string | null>(null);
   const [declineReason, setDeclineReason] = useState("");
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [cancelReason, setCancelReason] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -83,6 +86,22 @@ export function AdminDashboard({ onSessionEnded }: Props) {
         return;
       }
       setActionError("Could not decline this booking. Please try again.");
+    }
+  }
+
+  async function handleCancel(id: string) {
+    setActionError(null);
+    try {
+      const result = await cancelBookingAsAdmin(id, cancelReason);
+      applyBookingUpdate(id, result.status);
+      setCancellingId(null);
+      setCancelReason("");
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        onSessionEnded();
+        return;
+      }
+      setActionError("Could not cancel this booking. Please try again.");
     }
   }
 
@@ -176,6 +195,42 @@ export function AdminDashboard({ onSessionEnded }: Props) {
                 )}
               </>
             )}
+
+            {booking.status === "confirmed" &&
+              (cancellingId === booking.id ? (
+                <>
+                  <label>
+                    Reason (optional)
+                    <textarea
+                      value={cancelReason}
+                      maxLength={500}
+                      onChange={(event) => setCancelReason(event.target.value)}
+                    />
+                  </label>
+                  <button type="button" onClick={() => void handleCancel(booking.id)}>
+                    Confirm cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCancellingId(null);
+                      setCancelReason("");
+                    }}
+                  >
+                    Never mind
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCancellingId(booking.id);
+                    setCancelReason("");
+                  }}
+                >
+                  Cancel booking
+                </button>
+              ))}
           </li>
         ))}
       </ul>

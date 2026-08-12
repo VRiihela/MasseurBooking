@@ -62,6 +62,7 @@ export type EmailJobType =
   | "booking_confirmed"
   | "booking_declined"
   | "booking_cancelled_by_customer"
+  | "booking_cancelled_by_masseur"
   | "masseur_booking_change_notice"
   | "masseur_login_link";
 

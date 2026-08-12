@@ -2,6 +2,7 @@ import type { PoolClient } from "pg";
 import { getPool, withTransaction } from "../db/pool.js";
 import type { Booking, BookingStatus } from "../db/types.js";
 import {
+  BookingNotConfirmedError,
   BookingNotFoundError,
   BookingNotModifiableError,
   BookingNotPendingError,
@@ -13,6 +14,7 @@ import { loadSingletonProviderId } from "./adminCatalogService.js";
 import { hashToken, mintCustomerToken } from "./bookingTokenService.js";
 import {
   enqueueBookingCancelledByCustomer,
+  enqueueBookingCancelledByMasseur,
   enqueueBookingConfirmed,
   enqueueBookingDeclined,
   enqueueBookingRequestReceived,
@@ -85,6 +87,36 @@ async function transitionPendingBooking(
     throw new BookingNotFoundError();
   }
   throw new BookingNotPendingError();
+}
+
+/**
+ * Same pattern as transitionPendingBooking, but for the masseur cancelling a
+ * booking they already confirmed themselves. WHERE status = 'confirmed'
+ * scopes it strictly to that transition -- a 'pending' booking is decline's
+ * job, not this one's.
+ */
+async function transitionConfirmedBooking(
+  client: PoolClient,
+  id: string,
+  setClause: string,
+  params: unknown[],
+): Promise<BookingRow> {
+  const result = await client.query<BookingRow>(
+    `UPDATE bookings SET ${setClause}
+     WHERE id = $1 AND status = 'confirmed'
+     RETURNING ${BOOKING_COLUMNS}`,
+    [id, ...params],
+  );
+  const row = result.rows[0];
+  if (row) {
+    return row;
+  }
+
+  const existing = await findBookingById(client, id);
+  if (!existing) {
+    throw new BookingNotFoundError();
+  }
+  throw new BookingNotConfirmedError();
 }
 
 /**
@@ -324,6 +356,45 @@ export async function declineBooking(id: string, reason: string | undefined): Pr
     const context = await loadBookingEmailContext(client, booking);
     const rawToken = await mintCustomerToken(client, booking.id);
     await enqueueBookingDeclined(
+      client,
+      booking,
+      context.customer_email,
+      {
+        customerName: context.customer_name,
+        serviceName: context.service_name,
+        providerTimezone: context.provider_timezone,
+      },
+      rawToken,
+    );
+    return booking;
+  });
+}
+
+/**
+ * The masseur cancelling a booking they already confirmed on their own
+ * initiative -- distinct from declineBooking (which owns the pending ->
+ * cancelled transition with its own customer email). Unlike declineBooking,
+ * a null reason isn't left as null: a customer whose CONFIRMED appointment
+ * just got pulled has no other signal that anything happened, so they get at
+ * least a generic reason. No masseur-facing notice is enqueued here --
+ * enqueueMasseurBookingChangeNotice exists for schedule changes the masseur
+ * didn't cause themselves.
+ */
+export async function cancelBookingForAdmin(
+  id: string,
+  reason: string | undefined,
+): Promise<Booking> {
+  return withTransaction(async (client) => {
+    const row = await transitionConfirmedBooking(
+      client,
+      id,
+      "status = 'cancelled', cancelled_at = now(), cancellation_reason = $2",
+      [reason ?? "cancelled by masseur"],
+    );
+    const booking = toBooking(row);
+    const context = await loadBookingEmailContext(client, booking);
+    const rawToken = await mintCustomerToken(client, booking.id);
+    await enqueueBookingCancelledByMasseur(
       client,
       booking,
       context.customer_email,

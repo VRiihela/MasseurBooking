@@ -82,6 +82,24 @@ Booking reference: ${payload.bookingId}`,
   };
 }
 
+function renderCancelledByMasseur(payload: BookingEmailPayload): EmailMessage {
+  const name = sanitizeForSubject(payload.customerName);
+  const reasonLine = payload.cancellationReason
+    ? `\nReason: ${sanitizeForSubject(payload.cancellationReason)}\n`
+    : "";
+  return {
+    to: payload.customerEmail,
+    subject: `Your ${payload.serviceName} appointment has been cancelled`,
+    body: `Hi ${name},
+
+We're sorry, but your confirmed ${payload.serviceName} appointment on ${payload.startAtLocal} has had to be cancelled.
+${reasonLine}
+Manage your booking: ${payload.manageUrl}
+
+Booking reference: ${payload.bookingId}`,
+  };
+}
+
 function renderMasseurBookingChangeNotice(payload: MasseurBookingChangeEmailPayload): EmailMessage {
   const reasonLine = payload.cancellationReason
     ? `Reason: ${sanitizeForSubject(payload.cancellationReason)}\n`
@@ -119,6 +137,8 @@ export function renderEmail(type: EmailJobType, payload: EmailJobPayload): Email
       return renderDeclined(payload as BookingEmailPayload);
     case "booking_cancelled_by_customer":
       return renderCancelledByCustomer(payload as BookingEmailPayload);
+    case "booking_cancelled_by_masseur":
+      return renderCancelledByMasseur(payload as BookingEmailPayload);
     case "masseur_booking_change_notice":
       return renderMasseurBookingChangeNotice(payload as MasseurBookingChangeEmailPayload);
     case "masseur_login_link":

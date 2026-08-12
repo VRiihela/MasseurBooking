@@ -9,8 +9,12 @@ vi.mock("../../src/db/pool.js", () => ({
     work({ query: queryMock }),
 }));
 
-const { confirmBooking, declineBooking } = await import("../../src/services/bookingService.js");
-const { BookingNotFoundError, BookingNotPendingError } = await import("../../src/errors.js");
+const { cancelBookingForAdmin, confirmBooking, declineBooking } = await import(
+  "../../src/services/bookingService.js"
+);
+const { BookingNotConfirmedError, BookingNotFoundError, BookingNotPendingError } = await import(
+  "../../src/errors.js"
+);
 
 const bookingRow = {
   id: "booking-1",
@@ -87,6 +91,78 @@ describe("declineBooking", () => {
 
     await expect(declineBooking("booking-1", undefined)).rejects.toBeInstanceOf(
       BookingNotPendingError,
+    );
+  });
+});
+
+describe("cancelBookingForAdmin", () => {
+  it("transitions a confirmed booking to cancelled with the given reason and enqueues the masseur-cancel email", async () => {
+    const cancelledRow = {
+      ...bookingRow,
+      status: "cancelled",
+      confirmed_at: new Date(),
+      cancelled_at: new Date(),
+      cancellation_reason: "double-booked by mistake",
+    };
+    queryMock
+      .mockResolvedValueOnce({ rows: [cancelledRow] })
+      .mockResolvedValueOnce({ rows: [{ email: "jane@example.com" }] })
+      .mockResolvedValueOnce(undefined);
+
+    const booking = await cancelBookingForAdmin("booking-1", "double-booked by mistake");
+
+    expect(booking.status).toBe("cancelled");
+    expect(booking.cancellationReason).toBe("double-booked by mistake");
+    const [updateSql, updateParams] = queryMock.mock.calls[0];
+    expect(updateSql).toMatch(/WHERE id = \$1 AND status = 'confirmed'/);
+    expect(updateParams).toEqual(["booking-1", "double-booked by mistake"]);
+  });
+
+  it("defaults the cancellation reason to 'cancelled by masseur' when none is supplied", async () => {
+    const cancelledRow = {
+      ...bookingRow,
+      status: "cancelled",
+      confirmed_at: new Date(),
+      cancelled_at: new Date(),
+      cancellation_reason: "cancelled by masseur",
+    };
+    queryMock
+      .mockResolvedValueOnce({ rows: [cancelledRow] })
+      .mockResolvedValueOnce({ rows: [{ email: "jane@example.com" }] })
+      .mockResolvedValueOnce(undefined);
+
+    const booking = await cancelBookingForAdmin("booking-1", undefined);
+
+    expect(booking.cancellationReason).toBe("cancelled by masseur");
+    const [, updateParams] = queryMock.mock.calls[0];
+    expect(updateParams).toEqual(["booking-1", "cancelled by masseur"]);
+  });
+
+  it("throws BookingNotConfirmedError when the booking exists but is not confirmed (e.g. still pending)", async () => {
+    queryMock
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [{ ...bookingRow, status: "pending" }] });
+
+    await expect(cancelBookingForAdmin("booking-1", undefined)).rejects.toBeInstanceOf(
+      BookingNotConfirmedError,
+    );
+  });
+
+  it("throws BookingNotConfirmedError when the booking is already cancelled", async () => {
+    queryMock
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [{ ...bookingRow, status: "cancelled" }] });
+
+    await expect(cancelBookingForAdmin("booking-1", undefined)).rejects.toBeInstanceOf(
+      BookingNotConfirmedError,
+    );
+  });
+
+  it("throws BookingNotFoundError when the booking does not exist", async () => {
+    queryMock.mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({ rows: [] });
+
+    await expect(cancelBookingForAdmin("unknown-id", undefined)).rejects.toBeInstanceOf(
+      BookingNotFoundError,
     );
   });
 });

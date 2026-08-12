@@ -64,6 +64,24 @@ describe("markJobSent", () => {
     expect(storedPayload.serviceName).toBe("Massage");
   });
 
+  it("redacts manageUrl from a booking_cancelled_by_masseur payload once sent", async () => {
+    queryMock.mockResolvedValueOnce(undefined);
+    await markJobSent("job-1", "booking_cancelled_by_masseur", {
+      bookingId: "b1",
+      customerEmail: "jane@example.com",
+      customerName: "Jane",
+      serviceName: "Massage",
+      startAtLocal: "Monday at 9am",
+      cancellationReason: "cancelled by masseur",
+      manageUrl: "https://example.com/bookings/b1?token=abc123",
+    });
+    const [, params] = queryMock.mock.calls[0];
+    const storedPayload = JSON.parse(params[1]);
+    expect(storedPayload.manageUrl).toBeUndefined();
+    expect(storedPayload.customerName).toBe("Jane");
+    expect(storedPayload.cancellationReason).toBe("cancelled by masseur");
+  });
+
   it("redacts loginUrl from a masseur login-link payload once sent", async () => {
     queryMock.mockResolvedValueOnce(undefined);
     await markJobSent("job-1", "masseur_login_link", {

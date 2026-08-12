@@ -40,6 +40,7 @@ const SENSITIVE_PAYLOAD_FIELD: Partial<Record<EmailJobType, string>> = {
   booking_confirmed: "manageUrl",
   booking_declined: "manageUrl",
   booking_cancelled_by_customer: "manageUrl",
+  booking_cancelled_by_masseur: "manageUrl",
   masseur_login_link: "loginUrl",
 };
 

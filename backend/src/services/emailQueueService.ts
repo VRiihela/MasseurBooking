@@ -117,6 +117,24 @@ export async function enqueueBookingCancelledByCustomer(
   });
 }
 
+export async function enqueueBookingCancelledByMasseur(
+  client: PoolClient,
+  booking: Booking,
+  customerEmail: string,
+  context: EnqueueContext,
+  rawToken: string,
+): Promise<void> {
+  await insertEmailJob(client, "booking_cancelled_by_masseur", {
+    bookingId: booking.id,
+    customerEmail,
+    customerName: context.customerName,
+    serviceName: context.serviceName,
+    startAtLocal: formatLocalTime(booking.startAt, context.providerTimezone),
+    cancellationReason: booking.cancellationReason,
+    manageUrl: buildManageUrl(booking.id, rawToken),
+  });
+}
+
 /**
  * Fired whenever a customer action frees a slot on the masseur's schedule --
  * a direct cancel, or the cancel half of a reschedule. cancellationReason

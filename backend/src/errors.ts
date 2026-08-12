@@ -45,6 +45,12 @@ export class BookingNotPendingError extends AppError {
   }
 }
 
+export class BookingNotConfirmedError extends AppError {
+  constructor() {
+    super(409, "Booking is not confirmed");
+  }
+}
+
 export class BookingNotModifiableError extends AppError {
   constructor() {
     super(409, "Booking cannot be modified");
