@@ -23,6 +23,11 @@ Masseur Booking System
 - Lint: ESLint
 - Typecheck: `tsc --noEmit`
 - Dependency audit: `npm audit`
+- Backend integration tests run against a dedicated `masseur_booking_test` database, never the dev database (task 016/017 -- `resetAndSeed()` used to inherit whatever `DATABASE_URL` the shell happened to have exported, silently wiping real dev data on every `npm test`). One-time local setup, before running backend tests for the first time:
+  1. `createdb masseur_booking_test` (same local Postgres instance as dev, just a different database name)
+  2. Apply every file in `backend/src/db/migrations/` against it, in order: `psql -d masseur_booking_test -f backend/src/db/migrations/001_init_core_tables.sql`, then `002_...sql`, etc. (there is no migration-runner tool — an accepted gap)
+  3. `cp backend/.env.test.example backend/.env.test` and adjust if your local setup differs
+  Then `npm test` in `backend/` reads `backend/.env.test` directly at config-load time — it is never inherited from an ambient/shell-exported `DATABASE_URL`.
 
 ## Known Constraints
 - Performance limits: single masseur, low request volume — no horizontal scaling or multi-region needed at this stage

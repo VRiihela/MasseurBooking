@@ -4,6 +4,9 @@ import { createApp } from "../../src/app.js";
 import { closePool, getPool } from "../../src/db/pool.js";
 import { createPendingBooking, mintAdminSession, resetAndSeed } from "../helpers/fixtures.js";
 
+process.env.ADMIN_EMAIL = "admin@example.com";
+process.env.APP_BASE_URL = "https://admin.example.com";
+
 // Requires DATABASE_URL to point at a disposable Postgres DB with migrations
 // 001-006 already applied. Kept in its own file (own `app` instance) rather
 // than folded into bookings.confirmDecline.test.ts, so this block's own

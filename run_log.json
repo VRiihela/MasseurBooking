@@ -354,5 +354,27 @@
       "frontend/src/pages/AdminDashboard.tsx",
       "frontend/test/AdminDashboard.test.tsx"
     ]
+  },
+  {
+    "id": "017-isolate-test-database",
+    "title": "Isolate integration tests from the dev database (dedicated test DB + safety guard)",
+    "profile": "Node/TypeScript Backend",
+    "timestamp": "2026-08-12T14:50:00.000Z",
+    "dodStatus": "pass",
+    "filesChanged": [
+      "agents/tasks/017-isolate-test-database.json",
+      "backend/.env.test.example",
+      "backend/vitest.config.ts",
+      "backend/test/helpers/fixtures.ts",
+      "backend/test/unit/fixtures.assertTestDatabase.test.ts",
+      "backend/test/integration/bookings.confirmDecline.test.ts",
+      "backend/test/integration/bookings.cancelByAdmin.test.ts",
+      "backend/test/integration/bookings.concurrency.test.ts",
+      "backend/test/integration/bookings.customerManagement.test.ts",
+      "backend/test/integration/bookings.reschedule.concurrency.test.ts",
+      "backend/src/db/migrations/008_service_display_fields.sql",
+      ".gitignore",
+      "agents/context_template.md"
+    ]
   }
 ]

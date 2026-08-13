@@ -2,6 +2,25 @@ import { createHash, randomBytes } from "node:crypto";
 import type { Pool } from "pg";
 
 /**
+ * Defense in depth against resetAndSeed() ever running against a real
+ * database: independent of vitest.config.ts's .env.test-only DATABASE_URL
+ * (the first line of defense), this inspects the database the pool is
+ * *actually* connected to and refuses to proceed if its name doesn't look
+ * like a test database -- catches a misconfigured .env.test, a copy-paste
+ * mistake, or a CI environment set up wrong, before any DELETE runs.
+ */
+export function assertTestDatabase(pool: Pool): void {
+  const connectionString = pool.options.connectionString ?? "";
+  const databaseName = new URL(connectionString).pathname.replace(/^\//, "");
+  if (!databaseName.includes("test")) {
+    throw new Error(
+      `resetAndSeed() refused to run against database "${databaseName}" -- its name must ` +
+        `contain "test". Check backend/.env.test.`,
+    );
+  }
+}
+
+/**
  * Integration tests get a Provider/Service to book against via fixture rows
  * inserted here in beforeEach — there is no seed migration. Migrations only
  * create schema (tables, constraints, extensions); they never insert rows.
@@ -10,6 +29,8 @@ export async function resetAndSeed(
   pool: Pool,
   timezone = "UTC",
 ): Promise<{ providerId: string; serviceId: string }> {
+  assertTestDatabase(pool);
+
   await pool.query("DELETE FROM admin_login_tokens");
   await pool.query("DELETE FROM admin_sessions");
   await pool.query("DELETE FROM email_jobs");
