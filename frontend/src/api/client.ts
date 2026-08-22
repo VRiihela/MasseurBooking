@@ -1,14 +1,17 @@
 import type {
   AdminBooking,
   AdminBookingStatusFilter,
+  AvailabilityException,
   AvailabilityRule,
   CancelBookingResponse,
   ConfirmBookingResponse,
+  CreateAvailabilityExceptionRequest,
   CreateAvailabilityRuleRequest,
   CreateBookingRequest,
   CreateBookingResponse,
   CustomerBookingView,
   DeclineBookingResponse,
+  DeleteAvailabilityExceptionResponse,
   DeleteAvailabilityRuleResponse,
   ExchangeLoginTokenResponse,
   LoginRequestResponse,
@@ -171,6 +174,25 @@ export function createAvailabilityRule(
 
 export function deleteAvailabilityRule(id: string): Promise<DeleteAvailabilityRuleResponse> {
   return authRequest<DeleteAvailabilityRuleResponse>(`/admin/availability-rules/${id}`, {
+    method: "DELETE",
+  });
+}
+
+export function getAvailabilityExceptions(): Promise<AvailabilityException[]> {
+  return authRequest<AvailabilityException[]>("/admin/availability-exceptions");
+}
+
+export function createAvailabilityException(
+  payload: CreateAvailabilityExceptionRequest,
+): Promise<AvailabilityException> {
+  return authRequest<AvailabilityException>("/admin/availability-exceptions", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deleteAvailabilityException(id: string): Promise<DeleteAvailabilityExceptionResponse> {
+  return authRequest<DeleteAvailabilityExceptionResponse>(`/admin/availability-exceptions/${id}`, {
     method: "DELETE",
   });
 }

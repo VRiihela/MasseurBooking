@@ -108,3 +108,28 @@ export interface DeleteAvailabilityRuleResponse {
   id: string;
   deleted: boolean;
 }
+
+// One-off override for a specific date. This app only ever creates/renders
+// type "blocked" -- "open" (extra availability outside normal hours) is a
+// distinct feature this UI doesn't surface.
+export type AvailabilityExceptionType = "blocked" | "open";
+
+export interface AvailabilityException {
+  id: string;
+  date: string; // YYYY-MM-DD
+  type: AvailabilityExceptionType;
+  start_time: string; // HH:MM:SS
+  end_time: string; // HH:MM:SS
+}
+
+export interface CreateAvailabilityExceptionRequest {
+  date: string;
+  type: AvailabilityExceptionType;
+  start_time: string;
+  end_time: string;
+}
+
+export interface DeleteAvailabilityExceptionResponse {
+  id: string;
+  deleted: boolean;
+}

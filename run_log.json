@@ -413,5 +413,20 @@
       "frontend/test/AdminAvailability.test.tsx",
       "frontend/test/AdminDashboard.test.tsx"
     ]
+  },
+  {
+    "id": "020-tap-to-block-availability",
+    "title": "Tap-to-block ad-hoc unavailability on the schedule calendar (weeks/days/hours)",
+    "profile": "React Frontend",
+    "timestamp": "2026-08-22T14:35:00.000Z",
+    "dodStatus": "pass",
+    "filesChanged": [
+      "agents/tasks/020-tap-to-block-availability.json",
+      "frontend/src/api/types.ts",
+      "frontend/src/api/client.ts",
+      "frontend/src/pages/AdminCalendar.tsx",
+      "frontend/src/pages/AdminCalendar.css",
+      "frontend/test/AdminCalendar.test.tsx"
+    ]
   }
 ]

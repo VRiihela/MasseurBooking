@@ -42,6 +42,21 @@
   border-color: #166534;
 }
 
+/* Blocked availability -- deliberately a different visual language (diagonal
+   hatch, not just a third solid color) so it never reads as a third booking
+   status at a glance; it isn't a booking at all. */
+.rbc-event.admin-calendar-event-blocked {
+  background-color: #57534e;
+  border-color: #292524;
+  background-image: repeating-linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0.15),
+    rgba(255, 255, 255, 0.15) 4px,
+    transparent 4px,
+    transparent 8px
+  );
+}
+
 .admin-calendar-detail {
   margin-top: 0.75rem;
   padding: 0.75rem;
