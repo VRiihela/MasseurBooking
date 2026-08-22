@@ -1,0 +1,27 @@
+{
+  "title": "Standard weekly availability editor (recurring hours, e.g. Mon-Fri 10:00-19:00)",
+  "profile": "React Frontend",
+  "repo": "masseur-booking",
+  "tech": "React + TypeScript frontend only -- no backend change, the full CRUD API this needs already exists from task 008",
+  "keyConstraints": "No backend work: GET/POST /admin/availability-rules and PATCH/DELETE /admin/availability-rules/:id already exist (backend/src/routes/adminAvailability.ts), already behind requireMasseurAuth + adminRateLimit, and already validated (backend/src/validation/adminAvailabilitySchema.ts: weekday 1-7 where 1=Monday..7=Sunday, start_time/end_time as strict HH:MM:SS, end_time must be after startime). Confirmed via the schema that the database allows multiple rules per weekday with no uniqueness constraint -- the UI must not assume one row per day; a day can have zero, one, or several time ranges (e.g. 09:00-12:00 and 14:00-18:00 for a lunch break), and the editor must let the masseur add/remove ranges per day rather than binding one input pair per weekday. This is a distinct feature from task 018's calendar -- do not build this as a calendar interaction; it is a settings-style form (list of weekdays, each with its own set of time-range rows), reachable from AdminDashboard.tsx alongside the existing List/Calendar views. Mobile-first, same as the rest of the admin UI.",
+  "description": "Add an 'Availability' section to the admin dashboard where the masseur sets their standard recurring weekly hours (e.g. Mon-Fri 10:00-19:00). For each weekday (Monday-Sunday), show the existing rules for that day as removable rows, and let the masseur add a new time range (start time + end time) or delete an existing one. This is separate from ad-hoc blocking of specific dates (that is task 020) -- this screen only manages the recurring weekly pattern via availability_rules. No edit-in-place is required for v1: changing a time range is delete-old-row + add-new-row (matches the API shape -- PATCH exists but isn't required by this task; using POST+DELETE is acceptable and simpler). On load, fetch and group the existing rules by weekday so the masseur sees their current recurring schedule immediately.",
+  "acceptanceCriteria": [
+    "New Availability screen/section reachable from AdminDashboard.tsx, without altering the existing List or Calendar views, their behavior, or their tests",
+    "All 7 weekdays are shown (Monday first), each listing its current time-range rows fetched from GET /admin/availability-rules on load",
+    "Masseur can add a new time range to any weekday (start time + end time inputs) via POST /admin/availability-rules, with the new row appearing immediately on success",
+    "Masseur can delete an existing time range via DELETE /admin/availability-rules/:id, with the row disappearing immediately on success",
+    "Client-side validation mirrors the backend's: end time must be after start time, with a clear inline error if violated before the request is even sent",
+    "Backend validation errors (e.g. a 400 from the API) are surfaced to the masseur as a readable message, not swallowed or shown as a generic failure",
+    "A weekday with zero rules is clearly shown as having no standard hours that day (e.g. 'Closed' or 'No hours set'), not left blank/ambiguous",
+    "Layout verified usable at a narrow (phone-width) viewport",
+    "npm test, npm run build, npm run lint, and tsc --noEmit all pass in both backend/ and frontend/ (backend should be unaffected since no backend files change)"
+  ],
+  "relevantFilePaths": [
+    "backend/src/routes/adminAvailability.ts (existing API, read-only reference -- no changes expected)",
+    "backend/src/validation/adminAvailabilitySchema.ts (existing validation shape, read-only reference)",
+    "frontend/src/pages/AdminDashboard.tsx (add navigation entry point to the new screen)",
+    "frontend/src/pages/AdminAvailability.tsx (new, naming illustrative)",
+    "frontend/src/api/client.ts and frontend/src/api/types.ts (add availability-rules CRUD calls + types -- mirror the existing getAdminBookings/getAdminServices patterns)"
+  ],
+  "securityConsiderations": "None beyond what already governs the availability-rules routes (requireMasseurAuth + adminRateLimit, unchanged). No new mutation surface at the API level -- this task only adds a UI in front of an existing, already-reviewed CRUD API."
+}

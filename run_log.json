@@ -397,5 +397,21 @@
       "frontend/test/AdminDashboard.test.tsx",
       "frontend/test/AdminCalendar.test.tsx"
     ]
+  },
+  {
+    "id": "019-standard-availability-editor",
+    "title": "Standard weekly availability editor (recurring hours, e.g. Mon-Fri 10:00-19:00)",
+    "profile": "React Frontend",
+    "timestamp": "2026-08-22T10:35:00.000Z",
+    "dodStatus": "pass",
+    "filesChanged": [
+      "agents/tasks/019-standard-availability-editor.json",
+      "frontend/src/api/types.ts",
+      "frontend/src/api/client.ts",
+      "frontend/src/pages/AdminAvailability.tsx",
+      "frontend/src/pages/AdminDashboard.tsx",
+      "frontend/test/AdminAvailability.test.tsx",
+      "frontend/test/AdminDashboard.test.tsx"
+    ]
   }
 ]

@@ -88,3 +88,23 @@ export interface RescheduleBookingResponse {
   start_at: string;
   end_at: string;
 }
+
+// weekday: 1 = Monday .. 7 = Sunday (the API's convention, not JS Date.getDay()'s
+// 0 = Sunday .. 6 = Saturday). start_time/end_time are HH:MM:SS.
+export interface AvailabilityRule {
+  id: string;
+  weekday: number;
+  start_time: string;
+  end_time: string;
+}
+
+export interface CreateAvailabilityRuleRequest {
+  weekday: number;
+  start_time: string;
+  end_time: string;
+}
+
+export interface DeleteAvailabilityRuleResponse {
+  id: string;
+  deleted: boolean;
+}

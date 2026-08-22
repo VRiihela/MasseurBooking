@@ -1,12 +1,15 @@
 import type {
   AdminBooking,
   AdminBookingStatusFilter,
+  AvailabilityRule,
   CancelBookingResponse,
   ConfirmBookingResponse,
+  CreateAvailabilityRuleRequest,
   CreateBookingRequest,
   CreateBookingResponse,
   CustomerBookingView,
   DeclineBookingResponse,
+  DeleteAvailabilityRuleResponse,
   ExchangeLoginTokenResponse,
   LoginRequestResponse,
   LogoutResponse,
@@ -150,6 +153,25 @@ export function cancelBooking(id: string, token: string): Promise<CancelBookingR
   const params = new URLSearchParams({ token });
   return request<CancelBookingResponse>(`/bookings/${id}/cancel?${params.toString()}`, {
     method: "POST",
+  });
+}
+
+export function getAvailabilityRules(): Promise<AvailabilityRule[]> {
+  return authRequest<AvailabilityRule[]>("/admin/availability-rules");
+}
+
+export function createAvailabilityRule(
+  payload: CreateAvailabilityRuleRequest,
+): Promise<AvailabilityRule> {
+  return authRequest<AvailabilityRule>("/admin/availability-rules", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deleteAvailabilityRule(id: string): Promise<DeleteAvailabilityRuleResponse> {
+  return authRequest<DeleteAvailabilityRuleResponse>(`/admin/availability-rules/${id}`, {
+    method: "DELETE",
   });
 }
 

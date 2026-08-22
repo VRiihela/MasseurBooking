@@ -9,10 +9,11 @@ import {
   logout,
 } from "../api/client";
 import type { AdminBooking, AdminBookingStatusFilter } from "../api/types";
+import { AdminAvailability } from "./AdminAvailability";
 import { AdminCalendar } from "./AdminCalendar";
 
 const STATUS_FILTERS: AdminBookingStatusFilter[] = ["pending", "confirmed", "cancelled", "all"];
-type ViewMode = "list" | "calendar";
+type ViewMode = "list" | "calendar" | "availability";
 
 interface Props {
   onSessionEnded: () => void;
@@ -138,9 +139,17 @@ export function AdminDashboard({ onSessionEnded }: Props) {
         >
           Calendar
         </button>
+        <button
+          type="button"
+          aria-pressed={viewMode === "availability"}
+          onClick={() => setViewMode("availability")}
+        >
+          Availability
+        </button>
       </section>
 
       {viewMode === "calendar" && <AdminCalendar onSessionEnded={onSessionEnded} />}
+      {viewMode === "availability" && <AdminAvailability onSessionEnded={onSessionEnded} />}
 
       {viewMode === "list" && (
         <>
