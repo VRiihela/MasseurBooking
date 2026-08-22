@@ -416,6 +416,8 @@ export interface AdminBookingListItem {
   customerName: string;
   customerEmail: string;
   customerPhone: string;
+  startAt: Date;
+  endAt: Date;
   startAtLocal: string;
   endAtLocal: string;
   createdAt: Date;
@@ -473,6 +475,8 @@ export async function listBookingsForAdmin(
     customerName: row.customer_name,
     customerEmail: row.customer_email,
     customerPhone: row.customer_phone,
+    startAt: row.start_at,
+    endAt: row.end_at,
     startAtLocal: formatLocalTime(row.start_at, row.provider_timezone),
     endAtLocal: formatLocalTime(row.end_at, row.provider_timezone),
     createdAt: row.created_at,

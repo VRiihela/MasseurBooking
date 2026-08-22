@@ -376,5 +376,26 @@
       ".gitignore",
       "agents/context_template.md"
     ]
+  },
+  {
+    "id": "018-masseur-schedule-calendar",
+    "title": "Masseur schedule calendar view (month/week/day, mobile-first)",
+    "profile": "React Frontend",
+    "timestamp": "2026-08-22T08:20:00.000Z",
+    "dodStatus": "pass",
+    "filesChanged": [
+      "agents/tasks/018-masseur-schedule-calendar.json",
+      "backend/src/services/bookingService.ts",
+      "backend/src/routes/bookings.ts",
+      "backend/test/integration/admin.bookingsList.test.ts",
+      "frontend/package.json",
+      "frontend/package-lock.json",
+      "frontend/src/api/types.ts",
+      "frontend/src/pages/AdminDashboard.tsx",
+      "frontend/src/pages/AdminCalendar.tsx",
+      "frontend/src/pages/AdminCalendar.css",
+      "frontend/test/AdminDashboard.test.tsx",
+      "frontend/test/AdminCalendar.test.tsx"
+    ]
   }
 ]

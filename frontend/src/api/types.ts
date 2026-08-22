@@ -35,6 +35,8 @@ export interface AdminBooking {
   customer_name: string;
   customer_email: string;
   customer_phone: string;
+  start_at: string;
+  end_at: string;
   start_at_local: string;
   end_at_local: string;
   created_at: string;

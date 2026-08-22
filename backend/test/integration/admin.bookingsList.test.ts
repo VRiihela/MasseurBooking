@@ -63,6 +63,8 @@ describe("GET /admin/bookings", () => {
     expect(typeof response.body[0].start_at_local).toBe("string");
     expect(typeof response.body[0].end_at_local).toBe("string");
     expect(typeof response.body[0].created_at).toBe("string");
+    expect(response.body[0].start_at).toBe(earlier.toISOString());
+    expect(response.body[0].end_at).toBe(new Date(earlier.getTime() + 60 * 60_000).toISOString());
   });
 
   it("?status=pending returns only pending bookings", async () => {
@@ -127,6 +129,10 @@ describe("GET /admin/bookings", () => {
     expect(response.status).toBe(200);
     expect(response.body[0].start_at_local).toContain("9:00 AM");
     expect(response.body[0].start_at_local).not.toContain("2:00 PM");
+    // The raw fields are always UTC, regardless of provider timezone -- unlike
+    // start_at_local/end_at_local, they must never shift with provider.timezone.
+    expect(response.body[0].start_at).toBe(startAt);
+    expect(response.body[0].end_at).toBe(endAt);
   });
 
   it("applies a rate limit", async () => {

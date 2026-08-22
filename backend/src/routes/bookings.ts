@@ -156,6 +156,8 @@ bookingsRouter.get(
           customer_name: booking.customerName,
           customer_email: booking.customerEmail,
           customer_phone: booking.customerPhone,
+          start_at: booking.startAt.toISOString(),
+          end_at: booking.endAt.toISOString(),
           start_at_local: booking.startAtLocal,
           end_at_local: booking.endAtLocal,
           created_at: booking.createdAt.toISOString(),

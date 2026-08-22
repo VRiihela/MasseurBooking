@@ -312,6 +312,32 @@ describe("AdminDashboard", () => {
     expect(localStorage.getItem(SESSION_TOKEN_STORAGE_KEY)).toBeNull();
   });
 
+  it("switches to the calendar view and back via the toggle, without refetching or losing list state", async () => {
+    localStorage.setItem(SESSION_TOKEN_STORAGE_KEY, TOKEN);
+    const { fetchMock } = stubFetch();
+
+    render(<AdminDashboard onSessionEnded={() => {}} />);
+    await screen.findByTestId("booking-booking-1");
+
+    fireEvent.click(screen.getByRole("button", { name: "Calendar" }));
+
+    expect(screen.queryByTestId("booking-booking-1")).toBeNull();
+    await screen.findByTestId("admin-calendar-grid");
+
+    fireEvent.click(screen.getByRole("button", { name: "List" }));
+
+    await screen.findByTestId("booking-booking-1");
+    expect(screen.queryByTestId("admin-calendar-grid")).toBeNull();
+
+    // The list's own bookings state persists across the toggle -- no refetch
+    // on switching back, only the one initial load plus the calendar's own
+    // independent fetch when it mounted.
+    const listBookingsCalls = fetchMock.mock.calls.filter(([url]) =>
+      (url as string).includes("/admin/bookings") && !(url as string).includes("status="),
+    );
+    expect(listBookingsCalls.length).toBeLessThanOrEqual(1);
+  });
+
   it("logs out, clears the token, and ends the session even if the logout call fails", async () => {
     localStorage.setItem(SESSION_TOKEN_STORAGE_KEY, TOKEN);
     stubFetch({ logout: () => jsonResponse({ error: "Unauthorized" }, 401) });

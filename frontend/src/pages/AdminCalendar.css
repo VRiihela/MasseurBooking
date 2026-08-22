@@ -1,0 +1,61 @@
+/* Mobile-first: the base rules below target a narrow phone viewport first.
+   The min-width query widens things back out for larger screens, rather than
+   starting from a desktop grid and cramming it down -- this is the ordering
+   the task explicitly asked for. */
+
+.admin-calendar-grid {
+  height: 70vh;
+  min-height: 420px;
+  font-size: 0.8rem;
+}
+
+/* react-big-calendar's default toolbar lays its three sections out in a row
+   that overflows a phone width; stack them instead. */
+.admin-calendar-grid .rbc-toolbar {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.5rem;
+}
+
+.admin-calendar-grid .rbc-toolbar button {
+  padding: 0.5rem;
+}
+
+.admin-calendar-grid .rbc-event {
+  font-size: 0.75rem;
+  padding: 2px 4px;
+}
+
+/* .rbc-event.rbc-selected in react-big-calendar's own stylesheet matches
+   this selector's specificity -- these rules must come after that import
+   (they do, see the CSS import order above) so a selected pending/confirmed
+   event keeps its status color instead of falling back to the library's
+   default selected-blue. */
+.rbc-event.admin-calendar-event-pending {
+  background-color: #b45309;
+  border-color: #92400e;
+}
+
+.rbc-event.admin-calendar-event-confirmed {
+  background-color: #15803d;
+  border-color: #166534;
+}
+
+.admin-calendar-detail {
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  border: 1px solid #333;
+}
+
+@media (min-width: 640px) {
+  .admin-calendar-grid {
+    height: 80vh;
+    font-size: 1rem;
+  }
+
+  .admin-calendar-grid .rbc-toolbar {
+    flex-direction: row;
+    justify-content: space-between;
+  }
+}
