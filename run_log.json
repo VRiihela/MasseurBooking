@@ -445,5 +445,18 @@
       "frontend/test/AdminServices.test.tsx",
       "frontend/test/AdminDashboard.test.tsx"
     ]
+  },
+  {
+    "id": "022-calendar-inline-booking-actions",
+    "title": "Confirm/decline/cancel a booking directly from the schedule calendar's detail popup",
+    "profile": "React Frontend",
+    "timestamp": "2026-08-23T16:15:00.000Z",
+    "dodStatus": "pass",
+    "filesChanged": [
+      "agents/tasks/022-calendar-inline-booking-actions.json",
+      "frontend/src/pages/AdminCalendar.tsx",
+      "frontend/src/pages/AdminCalendar.css",
+      "frontend/test/AdminCalendar.test.tsx"
+    ]
   }
 ]

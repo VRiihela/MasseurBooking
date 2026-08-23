@@ -79,23 +79,55 @@ interface ExceptionRoutes {
   delete?: (id: string) => Response;
 }
 
+interface BookingActionRoutes {
+  confirm?: () => Response;
+  decline?: (body: unknown) => Response;
+  cancel?: (body: unknown) => Response;
+}
+
 let exceptionIdCounter = 0;
 
 function stubFetch(
   bookings: unknown[] | (() => Response) = [PENDING_BOOKING, CONFIRMED_BOOKING],
   exceptionRoutes: ExceptionRoutes = {},
+  actionRoutes: BookingActionRoutes = {},
 ) {
   const calls: { url: string; init?: RequestInit }[] = [];
   const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
     calls.push({ url, init });
     const method = init?.method ?? "GET";
+    const body: unknown = init?.body ? JSON.parse(init.body as string) : undefined;
 
+    if (url.includes("/confirm")) {
+      return actionRoutes.confirm
+        ? actionRoutes.confirm()
+        : jsonResponse({ id: "booking-1", status: "confirmed", confirmed_at: "2026-08-10T12:00:00.000Z" });
+    }
+    if (url.includes("/decline")) {
+      return actionRoutes.decline
+        ? actionRoutes.decline(body)
+        : jsonResponse({
+            id: "booking-1",
+            status: "cancelled",
+            cancelled_at: "2026-08-10T12:00:00.000Z",
+            cancellation_reason: (body as { reason?: string } | undefined)?.reason ?? null,
+          });
+    }
+    if (url.includes("/admin/bookings/") && url.includes("/cancel")) {
+      return actionRoutes.cancel
+        ? actionRoutes.cancel(body)
+        : jsonResponse({
+            id: "booking-2",
+            status: "cancelled",
+            cancelled_at: "2026-08-10T12:00:00.000Z",
+            cancellation_reason: (body as { reason?: string } | undefined)?.reason ?? null,
+          });
+    }
     if (url.includes("/admin/availability-exceptions") && method === "DELETE") {
       const id = url.split("/").pop() as string;
       return exceptionRoutes.delete ? exceptionRoutes.delete(id) : jsonResponse({ id, deleted: true });
     }
     if (url.includes("/admin/availability-exceptions") && method === "POST") {
-      const body: unknown = init?.body ? JSON.parse(init.body as string) : undefined;
       return exceptionRoutes.create
         ? exceptionRoutes.create(body)
         : jsonResponse({ id: `exc-${++exceptionIdCounter}`, ...(body as object) }, 201);
@@ -181,24 +213,210 @@ describe("AdminCalendar", () => {
     expect(screen.getByText("Deep Tissue Massage — Jane Doe")).not.toBeNull();
   });
 
-  it("shows read-only booking details on selection, with no Confirm/Decline/Cancel controls", async () => {
+  it("shows booking details on selection, with Confirm/Decline for a pending booking and Cancel booking for a confirmed one", async () => {
+    localStorage.setItem(SESSION_TOKEN_STORAGE_KEY, TOKEN);
+    stubFetch([PENDING_BOOKING, CONFIRMED_BOOKING]);
+
+    render(<AdminCalendar onSessionEnded={() => {}} />);
+    await screen.findByTestId("admin-calendar-grid");
+
+    fireEvent.click(screen.getByText("Deep Tissue Massage — Jane Doe"));
+    const pendingDialog = await screen.findByRole("dialog", { name: "Booking details" });
+    expect(pendingDialog).toHaveTextContent("Deep Tissue Massage");
+    expect(pendingDialog).toHaveTextContent("Jane Doe");
+    expect(pendingDialog).toHaveTextContent("jane@example.com");
+    expect(pendingDialog).toHaveTextContent("Status: pending");
+    expect(screen.getByRole("button", { name: "Confirm" })).not.toBeNull();
+    expect(screen.getByRole("button", { name: "Decline" })).not.toBeNull();
+    expect(screen.queryByRole("button", { name: "Cancel booking" })).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
+
+    fireEvent.click(screen.getByText("Deep Tissue Massage — John Smith"));
+    const confirmedDialog = await screen.findByRole("dialog", { name: "Booking details" });
+    expect(confirmedDialog).toHaveTextContent("Status: confirmed");
+    expect(screen.getByRole("button", { name: "Cancel booking" })).not.toBeNull();
+    expect(screen.queryByRole("button", { name: "Confirm" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Decline" })).toBeNull();
+  });
+
+  it("confirms a pending booking from the popup: updates the grid's event color and keeps the dialog open", async () => {
+    localStorage.setItem(SESSION_TOKEN_STORAGE_KEY, TOKEN);
+    const { calls } = stubFetch([PENDING_BOOKING]);
+
+    render(<AdminCalendar onSessionEnded={() => {}} />);
+    await screen.findByTestId("admin-calendar-grid");
+
+    fireEvent.click(screen.getByText("Deep Tissue Massage — Jane Doe"));
+    await screen.findByRole("dialog", { name: "Booking details" });
+
+    fireEvent.click(screen.getByRole("button", { name: "Confirm" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("dialog", { name: "Booking details" })).toHaveTextContent("Status: confirmed");
+    });
+    expect(screen.getByText("Deep Tissue Massage — Jane Doe").closest(".rbc-event")).toHaveClass(
+      "admin-calendar-event-confirmed",
+    );
+    expect(screen.getByRole("button", { name: "Cancel booking" })).not.toBeNull();
+
+    const confirmCall = calls.find((call) => call.url.includes("/confirm"));
+    expect(confirmCall?.url).toContain(`/bookings/${PENDING_BOOKING.id}/confirm`);
+  });
+
+  it("declines a pending booking with an optional reason: removes it from the grid and closes the dialog", async () => {
+    localStorage.setItem(SESSION_TOKEN_STORAGE_KEY, TOKEN);
+    const { calls } = stubFetch([PENDING_BOOKING]);
+
+    render(<AdminCalendar onSessionEnded={() => {}} />);
+    await screen.findByTestId("admin-calendar-grid");
+
+    fireEvent.click(screen.getByText("Deep Tissue Massage — Jane Doe"));
+    await screen.findByRole("dialog", { name: "Booking details" });
+
+    fireEvent.click(screen.getByRole("button", { name: "Decline" }));
+    fireEvent.change(screen.getByLabelText("Reason (optional)"), {
+      target: { value: "Masseur unavailable" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Confirm decline" }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog", { name: "Booking details" })).toBeNull();
+    });
+    expect(screen.queryByText("Deep Tissue Massage — Jane Doe")).toBeNull();
+
+    const declineCall = calls.find((call) => call.url.includes("/decline"));
+    expect(declineCall?.url).toContain(`/bookings/${PENDING_BOOKING.id}/decline`);
+    expect(JSON.parse(declineCall?.init?.body as string)).toEqual({ reason: "Masseur unavailable" });
+  });
+
+  it("declines without typing a reason: reason is omitted from the request", async () => {
+    localStorage.setItem(SESSION_TOKEN_STORAGE_KEY, TOKEN);
+    const { calls } = stubFetch([PENDING_BOOKING]);
+
+    render(<AdminCalendar onSessionEnded={() => {}} />);
+    await screen.findByTestId("admin-calendar-grid");
+
+    fireEvent.click(screen.getByText("Deep Tissue Massage — Jane Doe"));
+    await screen.findByRole("dialog", { name: "Booking details" });
+    fireEvent.click(screen.getByRole("button", { name: "Decline" }));
+    fireEvent.click(screen.getByRole("button", { name: "Confirm decline" }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog", { name: "Booking details" })).toBeNull();
+    });
+
+    const declineCall = calls.find((call) => call.url.includes("/decline"));
+    expect(JSON.parse(declineCall?.init?.body as string)).toEqual({});
+  });
+
+  it("cancels a confirmed booking with an optional reason: removes it from the grid and closes the dialog", async () => {
+    localStorage.setItem(SESSION_TOKEN_STORAGE_KEY, TOKEN);
+    const { calls } = stubFetch([CONFIRMED_BOOKING]);
+
+    render(<AdminCalendar onSessionEnded={() => {}} />);
+    await screen.findByTestId("admin-calendar-grid");
+
+    fireEvent.click(screen.getByText("Deep Tissue Massage — John Smith"));
+    await screen.findByRole("dialog", { name: "Booking details" });
+
+    fireEvent.click(screen.getByRole("button", { name: "Cancel booking" }));
+    fireEvent.change(screen.getByLabelText("Reason (optional)"), {
+      target: { value: "Customer requested" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Confirm cancel" }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog", { name: "Booking details" })).toBeNull();
+    });
+    expect(screen.queryByText("Deep Tissue Massage — John Smith")).toBeNull();
+
+    const cancelCall = calls.find((call) => call.url.includes("/admin/bookings/") && call.url.includes("/cancel"));
+    expect(cancelCall?.url).toContain(`/admin/bookings/${CONFIRMED_BOOKING.id}/cancel`);
+    expect(JSON.parse(cancelCall?.init?.body as string)).toEqual({ reason: "Customer requested" });
+  });
+
+  it("surfaces a failed confirm as readable text inside the dialog and leaves the booking unchanged", async () => {
+    localStorage.setItem(SESSION_TOKEN_STORAGE_KEY, TOKEN);
+    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+      const method = init?.method ?? "GET";
+      if (url.includes("/confirm")) {
+        return jsonResponse({ error: "Booking already confirmed" }, 409);
+      }
+      if (url.includes("/admin/bookings") && method === "GET") {
+        return jsonResponse([PENDING_BOOKING]);
+      }
+      throw new Error(`Unhandled fetch call: ${url}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AdminCalendar onSessionEnded={() => {}} />);
+    await screen.findByTestId("admin-calendar-grid");
+
+    fireEvent.click(screen.getByText("Deep Tissue Massage — Jane Doe"));
+    await screen.findByRole("dialog", { name: "Booking details" });
+    fireEvent.click(screen.getByRole("button", { name: "Confirm" }));
+
+    const dialog = await screen.findByRole("dialog", { name: "Booking details" });
+    await waitFor(() => {
+      expect(dialog).toHaveTextContent("Booking already confirmed");
+    });
+    expect(dialog).toHaveTextContent("Status: pending");
+    expect(screen.getByText("Deep Tissue Massage — Jane Doe").closest(".rbc-event")).toHaveClass(
+      "admin-calendar-event-pending",
+    );
+  });
+
+  it("clears the session and reports it ended on a 401 from a booking action", async () => {
+    localStorage.setItem(SESSION_TOKEN_STORAGE_KEY, TOKEN);
+    const onSessionEnded = vi.fn();
+    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+      const method = init?.method ?? "GET";
+      if (url.includes("/confirm")) {
+        return jsonResponse({ error: "Unauthorized" }, 401);
+      }
+      if (url.includes("/admin/bookings") && method === "GET") {
+        return jsonResponse([PENDING_BOOKING]);
+      }
+      throw new Error(`Unhandled fetch call: ${url}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AdminCalendar onSessionEnded={onSessionEnded} />);
+    await screen.findByTestId("admin-calendar-grid");
+
+    fireEvent.click(screen.getByText("Deep Tissue Massage — Jane Doe"));
+    await screen.findByRole("dialog", { name: "Booking details" });
+    fireEvent.click(screen.getByRole("button", { name: "Confirm" }));
+
+    await waitFor(() => {
+      expect(onSessionEnded).toHaveBeenCalled();
+    });
+    expect(localStorage.getItem(SESSION_TOKEN_STORAGE_KEY)).toBeNull();
+  });
+
+  it("confirming a booking works identically in Manage-availability mode", async () => {
     localStorage.setItem(SESSION_TOKEN_STORAGE_KEY, TOKEN);
     stubFetch([PENDING_BOOKING]);
 
     render(<AdminCalendar onSessionEnded={() => {}} />);
     await screen.findByTestId("admin-calendar-grid");
 
+    fireEvent.click(screen.getByRole("button", { name: "Manage availability" }));
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Manage availability" })).toHaveAttribute(
+        "aria-pressed",
+        "true",
+      );
+    });
+
     fireEvent.click(screen.getByText("Deep Tissue Massage — Jane Doe"));
+    await screen.findByRole("dialog", { name: "Booking details" });
+    fireEvent.click(screen.getByRole("button", { name: "Confirm" }));
 
-    const dialog = await screen.findByRole("dialog", { name: "Booking details" });
-    expect(dialog).toHaveTextContent("Deep Tissue Massage");
-    expect(dialog).toHaveTextContent("Jane Doe");
-    expect(dialog).toHaveTextContent("jane@example.com");
-    expect(dialog).toHaveTextContent("Status: pending");
-
-    expect(screen.queryByRole("button", { name: "Confirm" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Decline" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Cancel booking" })).toBeNull();
+    await waitFor(() => {
+      expect(screen.getByRole("dialog", { name: "Booking details" })).toHaveTextContent("Status: confirmed");
+    });
   });
 
   it("clears the session and reports it ended on a 401 from the bookings list", async () => {
@@ -212,6 +430,40 @@ describe("AdminCalendar", () => {
       expect(onSessionEnded).toHaveBeenCalled();
     });
     expect(localStorage.getItem(SESSION_TOKEN_STORAGE_KEY)).toBeNull();
+  });
+
+  it("selecting a different booking without closing the popup first does not carry over a stale error or reveal state", async () => {
+    localStorage.setItem(SESSION_TOKEN_STORAGE_KEY, TOKEN);
+    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+      const method = init?.method ?? "GET";
+      if (url.includes("/confirm")) {
+        return jsonResponse({ error: "Booking already confirmed" }, 409);
+      }
+      if (url.includes("/admin/bookings") && method === "GET") {
+        return jsonResponse([PENDING_BOOKING, CONFIRMED_BOOKING]);
+      }
+      throw new Error(`Unhandled fetch call: ${url}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<AdminCalendar onSessionEnded={() => {}} />);
+    await screen.findByTestId("admin-calendar-grid");
+
+    fireEvent.click(screen.getByText("Deep Tissue Massage — Jane Doe"));
+    await screen.findByRole("dialog", { name: "Booking details" });
+    fireEvent.click(screen.getByRole("button", { name: "Decline" }));
+    fireEvent.click(screen.getByRole("button", { name: "Confirm" }));
+    await waitFor(() => {
+      expect(screen.getByRole("dialog", { name: "Booking details" })).toHaveTextContent(
+        "Booking already confirmed",
+      );
+    });
+
+    fireEvent.click(screen.getByText("Deep Tissue Massage — John Smith"));
+    const dialog = await screen.findByRole("dialog", { name: "Booking details" });
+    expect(dialog).toHaveTextContent("Status: confirmed");
+    expect(dialog).not.toHaveTextContent("Booking already confirmed");
+    expect(screen.queryByLabelText("Reason (optional)")).toBeNull();
   });
 });
 

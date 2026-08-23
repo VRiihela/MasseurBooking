@@ -5,7 +5,10 @@ import "react-big-calendar/lib/css/react-big-calendar.css";
 import "./AdminCalendar.css";
 import {
   ApiError,
+  cancelBookingAsAdmin,
+  confirmBooking,
   createAvailabilityException,
+  declineBooking,
   deleteAvailabilityException,
   getAdminBookings,
   getAvailabilityExceptions,
@@ -206,6 +209,11 @@ export function AdminCalendar({ onSessionEnded }: Props) {
   const [view, setView] = useState<View>(Views.DAY);
   const [date, setDate] = useState(new Date());
   const [selectedBooking, setSelectedBooking] = useState<AdminBooking | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [decliningId, setDecliningId] = useState<string | null>(null);
+  const [declineReason, setDeclineReason] = useState("");
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [cancelReason, setCancelReason] = useState("");
 
   const [mode, setMode] = useState<CalendarMode>("view");
   const [exceptions, setExceptions] = useState<AvailabilityException[] | null>(null);
@@ -303,10 +311,99 @@ export function AdminCalendar({ onSessionEnded }: Props) {
 
   function handleSelectEvent(event: CalendarEvent) {
     if (event.kind === "booking") {
+      resetActionState();
       setSelectedBooking(event.booking);
       return;
     }
     void handleUnblock(event.exception);
+  }
+
+  // Selecting a different booking event without closing the current popup
+  // first is possible -- the popup has no backdrop blocking the grid --
+  // so this is called both there and on Close, to prevent a stale error or
+  // reveal-form state from one booking leaking into the next.
+  function resetActionState() {
+    setActionError(null);
+    setDecliningId(null);
+    setDeclineReason("");
+    setCancellingId(null);
+    setCancelReason("");
+  }
+
+  function closeBookingDetail() {
+    setSelectedBooking(null);
+    resetActionState();
+  }
+
+  // Mirrors AdminDashboard.tsx's applyBookingUpdate, plus keeping
+  // selectedBooking in sync -- the list view has no equivalent of a
+  // persistently-open "selected" item, so this extra step is unique to the
+  // calendar's popup.
+  function applyBookingUpdate(id: string, status: AdminBooking["status"]) {
+    setBookings((current) =>
+      current ? current.map((booking) => (booking.id === id ? { ...booking, status } : booking)) : current,
+    );
+    setSelectedBooking((current) => (current && current.id === id ? { ...current, status } : current));
+  }
+
+  async function handleConfirm(id: string) {
+    setActionError(null);
+    try {
+      const result = await confirmBooking(id);
+      applyBookingUpdate(id, result.status);
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        onSessionEnded();
+        return;
+      }
+      setActionError(
+        error instanceof ApiError ? error.message : "Could not confirm this booking. Please try again.",
+      );
+    }
+  }
+
+  async function handleDecline(id: string) {
+    setActionError(null);
+    try {
+      const result = await declineBooking(id, declineReason);
+      applyBookingUpdate(id, result.status);
+      if (result.status === "cancelled") {
+        closeBookingDetail();
+        return;
+      }
+      setDecliningId(null);
+      setDeclineReason("");
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        onSessionEnded();
+        return;
+      }
+      setActionError(
+        error instanceof ApiError ? error.message : "Could not decline this booking. Please try again.",
+      );
+    }
+  }
+
+  async function handleCancel(id: string) {
+    setActionError(null);
+    try {
+      const result = await cancelBookingAsAdmin(id, cancelReason);
+      applyBookingUpdate(id, result.status);
+      if (result.status === "cancelled") {
+        closeBookingDetail();
+        return;
+      }
+      setCancellingId(null);
+      setCancelReason("");
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        onSessionEnded();
+        return;
+      }
+      setActionError(
+        error instanceof ApiError ? error.message : "Could not cancel this booking. Please try again.",
+      );
+    }
   }
 
   async function handleUnblock(exception: AvailabilityException) {
@@ -403,7 +500,88 @@ export function AdminCalendar({ onSessionEnded }: Props) {
             {selectedBooking.customer_phone}
           </p>
           <p>Status: {selectedBooking.status}</p>
-          <button type="button" onClick={() => setSelectedBooking(null)}>
+
+          {actionError && <p role="alert">{actionError}</p>}
+
+          {selectedBooking.status === "pending" && (
+            <>
+              <button type="button" onClick={() => void handleConfirm(selectedBooking.id)}>
+                Confirm
+              </button>
+              {decliningId === selectedBooking.id ? (
+                <>
+                  <label>
+                    Reason (optional)
+                    <textarea
+                      value={declineReason}
+                      maxLength={500}
+                      onChange={(event) => setDeclineReason(event.target.value)}
+                    />
+                  </label>
+                  <button type="button" onClick={() => void handleDecline(selectedBooking.id)}>
+                    Confirm decline
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDecliningId(null);
+                      setDeclineReason("");
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDecliningId(selectedBooking.id);
+                    setDeclineReason("");
+                  }}
+                >
+                  Decline
+                </button>
+              )}
+            </>
+          )}
+
+          {selectedBooking.status === "confirmed" &&
+            (cancellingId === selectedBooking.id ? (
+              <>
+                <label>
+                  Reason (optional)
+                  <textarea
+                    value={cancelReason}
+                    maxLength={500}
+                    onChange={(event) => setCancelReason(event.target.value)}
+                  />
+                </label>
+                <button type="button" onClick={() => void handleCancel(selectedBooking.id)}>
+                  Confirm cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCancellingId(null);
+                    setCancelReason("");
+                  }}
+                >
+                  Never mind
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  setCancellingId(selectedBooking.id);
+                  setCancelReason("");
+                }}
+              >
+                Cancel booking
+              </button>
+            ))}
+
+          <button type="button" onClick={closeBookingDetail}>
             Close
           </button>
         </div>
