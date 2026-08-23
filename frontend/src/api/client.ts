@@ -1,10 +1,12 @@
 import type {
   AdminBooking,
   AdminBookingStatusFilter,
+  AdminService,
   AvailabilityException,
   AvailabilityRule,
   CancelBookingResponse,
   ConfirmBookingResponse,
+  CreateAdminServiceRequest,
   CreateAvailabilityExceptionRequest,
   CreateAvailabilityRuleRequest,
   CreateBookingRequest,
@@ -18,6 +20,7 @@ import type {
   LogoutResponse,
   RescheduleBookingResponse,
   Service,
+  UpdateAdminServiceRequest,
 } from "./types";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -194,6 +197,27 @@ export function createAvailabilityException(
 export function deleteAvailabilityException(id: string): Promise<DeleteAvailabilityExceptionResponse> {
   return authRequest<DeleteAvailabilityExceptionResponse>(`/admin/availability-exceptions/${id}`, {
     method: "DELETE",
+  });
+}
+
+export function getAdminServices(): Promise<AdminService[]> {
+  return authRequest<AdminService[]>("/admin/services");
+}
+
+export function createAdminService(payload: CreateAdminServiceRequest): Promise<AdminService> {
+  return authRequest<AdminService>("/admin/services", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateAdminService(
+  id: string,
+  payload: UpdateAdminServiceRequest,
+): Promise<AdminService> {
+  return authRequest<AdminService>(`/admin/services/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
   });
 }
 

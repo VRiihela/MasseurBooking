@@ -428,5 +428,22 @@
       "frontend/src/pages/AdminCalendar.css",
       "frontend/test/AdminCalendar.test.tsx"
     ]
+  },
+  {
+    "id": "021-admin-service-management",
+    "title": "Admin service management (massage duration + before/after preparation buffers)",
+    "profile": "React Frontend",
+    "timestamp": "2026-08-23T10:20:00.000Z",
+    "dodStatus": "pass",
+    "filesChanged": [
+      "agents/tasks/021-admin-service-management.json",
+      "frontend/src/api/types.ts",
+      "frontend/src/api/client.ts",
+      "frontend/src/pages/AdminServices.tsx",
+      "frontend/src/pages/AdminServices.css",
+      "frontend/src/pages/AdminDashboard.tsx",
+      "frontend/test/AdminServices.test.tsx",
+      "frontend/test/AdminDashboard.test.tsx"
+    ]
   }
 ]

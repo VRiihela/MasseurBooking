@@ -133,3 +133,38 @@ export interface DeleteAvailabilityExceptionResponse {
   id: string;
   deleted: boolean;
 }
+
+// The admin view of a service -- distinct from the public Service above
+// (GET /services only ever returns the public-safe {id, name, price,
+// duration_minutes} subset via listActiveServices). This mirrors
+// adminServices.ts's serviceResponse() exactly, including fields the public
+// endpoint never exposes (both buffers, active) and inactive services the
+// public endpoint never returns at all.
+export interface AdminService {
+  id: string;
+  name: string;
+  price: number;
+  duration_minutes: number;
+  buffer_before_minutes: number;
+  buffer_after_minutes: number;
+  active: boolean;
+}
+
+// No `active` -- deliberately not exposed on create (see AdminServices.tsx);
+// the backend defaults it to true.
+export interface CreateAdminServiceRequest {
+  name: string;
+  price: number;
+  duration_minutes: number;
+  buffer_before_minutes: number;
+  buffer_after_minutes: number;
+}
+
+export interface UpdateAdminServiceRequest {
+  name?: string;
+  price?: number;
+  duration_minutes?: number;
+  buffer_before_minutes?: number;
+  buffer_after_minutes?: number;
+  active?: boolean;
+}

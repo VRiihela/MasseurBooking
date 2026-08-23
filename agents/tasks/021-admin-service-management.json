@@ -1,0 +1,30 @@
+{
+  "title": "Admin service management (massage duration + before/after preparation buffers)",
+  "profile": "React Frontend",
+  "repo": "masseur-booking",
+  "tech": "React + TypeScript frontend only -- no backend change, the full CRUD API this needs already exists from task 008",
+  "keyConstraints": "No backend work: GET/POST /admin/services and PATCH /admin/services/:id already exist (backend/src/routes/adminServices.ts), already behind requireMasseurAuth + adminRateLimit, and already validated (backend/src/validation/adminServiceSchema.ts: name non-empty, price positive number, duration_minutes positive integer, buffer_before_minutes/buffer_after_minutes zero-or-greater integers, acte boolean). There is no DELETE /admin/services route and none should be added -- confirmed via adminCatalogService.ts that services are referenced by bookings.service_id, so hard-delete would be a referential-integrity hazard; deactivation is done via PATCH {active: false}, which is the actual and only 'remove' mechanism. listServices() (backing GET /admin/services) returns ALL services including inactive ones, ordered by name -- unlike the public GET /services which only returns active ones -- so the admin UI must show inactive services too (visually distinguished, e.g. greyed out), not filter them out. No uniqueness constraint on service name exists at the database or validation layer, so the UI must not invent one. This is a distinct screen from the existing List/Calendar/Availability toggle on AdminDashboard.tsx -- add a fourth option there following the exact same isolation pattern (own independent fetch, no shared state with the other views) established in tasks 018/019. Mobile-first, same as the rest of the admin UI.",
+  "description": "Add a 'Services' section to the admin dashboard where the masseur manages their service catalog: what a service is called, its price, how long the massage itself takes (duration_minutes), and how much buffer time to reserve immediately before and after it (buffer_before_minutes, buffer_after_minutes -- e.g. setup/cleanup time that should never be bookable by a customer but also isn't part of the massage duration itself). Support: (1) listing all services, active and inactive, visually distinguished; (2) creating a new service with all fields; (3) editing an existing service's fields (including duration and both buffers) via PATCH; (4) deactivating an active service or reactivating an inactive one via the same PATCH active toggle -- this is the only 'removal' mechanism, there is no delete.",
+  "acceptanceCriteria": [
+    "New Services screen/section reachable from AdminDashboard.tsx, without altering the existing List, Calendar, or Availability views, their behavior, or their tests",
+    "All services (active and inactive) are listed on load via GET /admin/services, with inactive services visually distinguished from active ones",
+    "Masseur can create a new service (name, price, duration_minutes, buffer_before_minutes, buffer_after_minutes, active) via POST /admin/services, with the new service appearing immediately on success",
+    "Masseur can edit an existing service's fields, including duration_minutes and both buffer fields, via PATCH /admin/services/:id, with changes reflected immediately on success",
+    "Masseur can deactivate an active service or reactivate an inactive one via PATCH {active: ...}, with the status change reflected immediately",
+    "Client-side validation mirrors the backend's: name required, price positive, duration_minutes a positive integer, both buffer fields zero-or-greater integers -- with inline errors before any request is sent",
+    "Backend validation errors are surfaced to the masseur as a readable message, not swallowed or shown as a generic failure",
+    "The distinction between duration_minutes (the massage itself) and the two buffer fields (preparation/cleanup time around it) is clear in the UI copy -- not just three unlabeled number inputs",
+    "Layout verified usable at a narrow (phone-width) viewport",
+    "npm test, npm run build, npm run lint, and tsc --noEmit all pass in both backend/ and frontend/ (backend should be unaffected since no backend files change)"
+  ],
+  "relevantFilePaths": [
+    "backend/src/routes/adminServices.ts (existing API, read-only reference -- no changes expected)",
+    "backend/src/validation/adminServiceSchema.ts (existing validation shape, read-only reference)",
+    "backend/src/services/adminCatalogService.ts (existing service CRUD, read-only reference -- confirms no delete, no name-uniqueness constraint)",
+    "frontend/src/pages/AdminDashboard.tsx (extend the existing view toggle with a fourth option)",
+    "frontend/src/pages/AdminServices.tsx (new, naming illustrative)",
+    "frontend/src/pages/AdminAvailability.tsx (existing sibling screen from task 019 -- reference for the established form/list/inline-error pattern to follow)",
+    "frontend/src/api/client.ts and frontend/src/api/types.ts (add services admin CRUD calls + types, mirroring the availability-rules pattern from task 019)"
+  ],
+  "securityConsiderations": "None beyond what already governs the services routes (requireMasseurAuth + adminRateLimit, unchanged). No new mutation surface at the API level -- this task only adds a UI in front of an existing, already-reviewed CRUD API."
+}

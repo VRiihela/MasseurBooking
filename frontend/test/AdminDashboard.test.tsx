@@ -37,6 +37,7 @@ interface FetchRoutes {
   cancel?: (body: unknown) => Response;
   logout?: () => Response;
   availabilityRules?: () => Response;
+  services?: () => Response;
 }
 
 function stubFetch(routes: FetchRoutes = {}) {
@@ -77,6 +78,9 @@ function stubFetch(routes: FetchRoutes = {}) {
     }
     if (url.includes("/admin/availability-rules")) {
       return routes.availabilityRules ? routes.availabilityRules() : jsonResponse([]);
+    }
+    if (url.includes("/admin/services")) {
+      return routes.services ? routes.services() : jsonResponse([]);
     }
     if (url.includes("/auth/logout")) {
       return routes.logout ? routes.logout() : jsonResponse({ message: "Logged out" });
@@ -358,6 +362,24 @@ describe("AdminDashboard", () => {
 
     await screen.findByTestId("booking-booking-1");
     expect(screen.queryByTestId("weekday-1")).toBeNull();
+  });
+
+  it("switches to the services view and back via the toggle, without disturbing the list", async () => {
+    localStorage.setItem(SESSION_TOKEN_STORAGE_KEY, TOKEN);
+    stubFetch();
+
+    render(<AdminDashboard onSessionEnded={() => {}} />);
+    await screen.findByTestId("booking-booking-1");
+
+    fireEvent.click(screen.getByRole("button", { name: "Services" }));
+
+    expect(screen.queryByTestId("booking-booking-1")).toBeNull();
+    await screen.findByRole("region", { name: "Add a new service" });
+
+    fireEvent.click(screen.getByRole("button", { name: "List" }));
+
+    await screen.findByTestId("booking-booking-1");
+    expect(screen.queryByRole("region", { name: "Add a new service" })).toBeNull();
   });
 
   it("logs out, clears the token, and ends the session even if the logout call fails", async () => {
