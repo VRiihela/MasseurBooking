@@ -3,6 +3,7 @@ import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import request from "supertest";
 import { createApp } from "../../src/app.js";
 import { closePool, getPool } from "../../src/db/pool.js";
+import { computeAvailableSlots } from "../../src/services/availabilityService.js";
 import {
   createAvailabilityException,
   createAvailabilityRule,
@@ -20,7 +21,10 @@ function localToUtcIso(date: string, time: string, zone: string): string {
 const app = createApp();
 const pool = getPool();
 
-const TEST_DATE = "2026-08-17"; // arbitrary future date; weekday computed dynamically below
+// Computed relative to "now" rather than a fixed literal -- a hardcoded
+// future date silently goes stale (this one already had, see task 024);
+// weekday is computed dynamically below either way.
+const TEST_DATE = DateTime.now().plus({ months: 1 }).toISODate()!;
 const weekday = DateTime.fromISO(TEST_DATE, { zone: "UTC" }).weekday;
 
 let providerId: string;
@@ -166,6 +170,30 @@ describe("GET /availability", () => {
 
     expect(response.status).toBe(404);
     expect(response.body).toEqual({ error: "Service not found" });
+  });
+
+  it("returns an empty list, not an error, for a fully past date", async () => {
+    const pastDate = "2020-01-01"; // permanently in the past
+    const pastWeekday = DateTime.fromISO(pastDate, { zone: "UTC" }).weekday;
+    await createAvailabilityRule(pool, providerId, pastWeekday, "09:00:00", "12:00:00");
+
+    const response = await request(app)
+      .get("/availability")
+      .query({ service_id: serviceId, date: pastDate });
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual([]);
+  });
+
+  it("excludes slots at or before the cutoff, keeps the rest -- strict > boundary", async () => {
+    await createAvailabilityRule(pool, providerId, weekday, "09:00:00", "12:00:00");
+    const cutoffMs = new Date(`${TEST_DATE}T10:00:00.000Z`).getTime();
+
+    const slots = await computeAvailableSlots({ serviceId, date: TEST_DATE, nowMs: cutoffMs });
+
+    expect(slots).not.toContain(`${TEST_DATE}T09:00:00.000Z`);
+    expect(slots).not.toContain(`${TEST_DATE}T10:00:00.000Z`); // == cutoff, strict > excludes it
+    expect(slots[0]).toBe(`${TEST_DATE}T10:15:00.000Z`); // first slot strictly after cutoff
   });
 });
 

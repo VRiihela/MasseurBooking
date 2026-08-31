@@ -470,5 +470,19 @@
       "backend/src/services/bookingService.ts",
       "backend/test/integration/bookings.customerManagement.test.ts"
     ]
+  },
+  {
+    "id": "024-exclude-past-slots",
+    "title": "Exclude past/expired time slots from the availability list",
+    "profile": "Node/TypeScript Backend",
+    "timestamp": "2026-08-31T19:12:30.000Z",
+    "dodStatus": "pass",
+    "filesChanged": [
+      "agents/tasks/024-exclude-past-slots.json",
+      "backend/src/services/availabilityService.ts",
+      "backend/test/integration/availability.test.ts",
+      "frontend/src/pages/BookingWidget.tsx",
+      "frontend/test/BookingWidget.test.tsx"
+    ]
   }
 ]

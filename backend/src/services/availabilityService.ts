@@ -108,9 +108,13 @@ async function loadBookingIntervals(
 export interface ComputeAvailableSlotsInput {
   serviceId: string;
   date: string; // "YYYY-MM-DD", interpreted in the provider's timezone
+  // Not accepted from client input (see routes/availability.ts) -- lets
+  // tests pin "now" without a fake-timers dependency.
+  nowMs?: number;
 }
 
 export async function computeAvailableSlots(input: ComputeAvailableSlotsInput): Promise<string[]> {
+  const cutoffMs = input.nowMs ?? Date.now();
   const service = await loadServiceWithProvider(input.serviceId);
   const zone = service.timezone;
 
@@ -136,7 +140,9 @@ export async function computeAvailableSlots(input: ComputeAvailableSlotsInput): 
   const slotDurationMs = totalMinutes * 60_000;
   const granularityMs = SLOT_GRANULARITY_MINUTES * 60_000;
 
-  return sliceIntoSlots(free, slotDurationMs, granularityMs).map((ms) =>
-    new Date(ms).toISOString(),
-  );
+  // Never offer a slot bookingSchema.ts's own "must be in the future" rule
+  // (strict >, same Date.now() comparison) would then reject.
+  return sliceIntoSlots(free, slotDurationMs, granularityMs)
+    .filter((ms) => ms > cutoffMs)
+    .map((ms) => new Date(ms).toISOString());
 }

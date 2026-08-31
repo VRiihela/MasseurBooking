@@ -193,6 +193,7 @@ export function BookingWidget() {
             <input
               type="date"
               value={date}
+              min={todayLocalDateInput()}
               onChange={(event) => handleDateChange(event.target.value)}
             />
           </label>

@@ -165,4 +165,18 @@ describe("BookingWidget", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(/valid email/i);
     expect(fetchMock.mock.calls.some(([url]) => String(url).includes("/bookings"))).toBe(false);
   });
+
+  it("sets min on the date input to today, as defense-in-depth against past dates", async () => {
+    stubFetch();
+    render(<BookingWidget />);
+
+    fireEvent.click(await screen.findByTestId(`service-option-${SERVICE.id}`));
+    await screen.findByTestId(`slot-option-${SLOT}`);
+
+    const today = new Date();
+    const expected = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(
+      today.getDate(),
+    ).padStart(2, "0")}`;
+    expect(screen.getByLabelText("Date")).toHaveAttribute("min", expected);
+  });
 });
