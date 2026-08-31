@@ -2,6 +2,7 @@ import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import request from "supertest";
 import { createApp } from "../../src/app.js";
 import { closePool, getPool } from "../../src/db/pool.js";
+import { formatLocalTime } from "../../src/services/timeFormat.js";
 import {
   createBookingAt,
   createPendingBooking,
@@ -32,6 +33,9 @@ describe("GET /bookings/:id", () => {
   it("returns status, service name, and local start/end time when the token matches", async () => {
     const bookingId = await createPendingBooking(pool, providerId, serviceId);
     const token = await mintCustomerBookingToken(pool, bookingId);
+    const stored = await pool.query<{ start_at: Date }>(`SELECT start_at FROM bookings WHERE id = $1`, [
+      bookingId,
+    ]);
 
     const response = await request(app).get(`/bookings/${bookingId}`).query({ token });
 
@@ -42,8 +46,43 @@ describe("GET /bookings/:id", () => {
       service_id: serviceId,
       service_name: expect.any(String),
     });
-    expect(typeof response.body.start_at_local).toBe("string");
-    expect(typeof response.body.end_at_local).toBe("string");
+    // The seeded service has buffer_before_minutes = 0, so the displayed
+    // start must equal the raw stored start_at unchanged -- no regression
+    // for the common zero-buffer-before case.
+    expect(response.body.start_at_local).toBe(formatLocalTime(stored.rows[0].start_at, "UTC"));
+  });
+
+  it("excludes buffer time from the displayed window for a service with buffer_before and buffer_after", async () => {
+    const bufferedService = await pool.query<{ id: string }>(
+      `INSERT INTO services (provider_id, name, price, duration_minutes, buffer_before_minutes, buffer_after_minutes, active)
+       VALUES ($1, 'Hot Stone Massage', 80.00, 50, 10, 30, true) RETURNING id`,
+      [providerId],
+    );
+    const bufferedServiceId = bufferedService.rows[0].id;
+
+    // start_at/end_at as createBookingCore actually stores them: the full
+    // reserved block (buffer_before + duration + buffer_after).
+    const rawStart = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    const rawEnd = new Date(rawStart.getTime() + (10 + 50 + 30) * 60_000);
+    const bookingId = await createBookingAt(
+      pool,
+      providerId,
+      bufferedServiceId,
+      rawStart.toISOString(),
+      rawEnd.toISOString(),
+    );
+    const token = await mintCustomerBookingToken(pool, bookingId);
+
+    const response = await request(app).get(`/bookings/${bookingId}`).query({ token });
+
+    expect(response.status).toBe(200);
+
+    const expectedMassageStart = new Date(rawStart.getTime() + 10 * 60_000);
+    const expectedMassageEnd = new Date(expectedMassageStart.getTime() + 50 * 60_000);
+    expect(response.body.start_at_local).toBe(formatLocalTime(expectedMassageStart, "UTC"));
+    expect(response.body.end_at_local).toBe(formatLocalTime(expectedMassageEnd, "UTC"));
+    expect(response.body.start_at_local).not.toBe(formatLocalTime(rawStart, "UTC"));
+    expect(response.body.end_at_local).not.toBe(formatLocalTime(rawEnd, "UTC"));
   });
 
   it("returns a generic 404 for a wrong token on a real booking id", async () => {

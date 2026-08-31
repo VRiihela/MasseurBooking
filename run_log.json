@@ -458,5 +458,17 @@
       "frontend/src/pages/AdminCalendar.css",
       "frontend/test/AdminCalendar.test.tsx"
     ]
+  },
+  {
+    "id": "023-fix-customer-view-shows-buffer-time",
+    "title": "Fix: customer's manage-booking page shows the full buffered block instead of the actual massage window",
+    "profile": "Node/TypeScript Backend",
+    "timestamp": "2026-08-31T16:12:00.000Z",
+    "dodStatus": "pass",
+    "filesChanged": [
+      "agents/tasks/023-fix-customer-view-shows-buffer-time.json",
+      "backend/src/services/bookingService.ts",
+      "backend/test/integration/bookings.customerManagement.test.ts"
+    ]
   }
 ]

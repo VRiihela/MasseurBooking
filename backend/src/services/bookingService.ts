@@ -517,6 +517,8 @@ interface CustomerBookingViewRow {
   service_id: string;
   service_name: string;
   provider_timezone: string;
+  duration_minutes: number;
+  buffer_before_minutes: number;
 }
 
 export async function getBookingForCustomer(
@@ -524,7 +526,8 @@ export async function getBookingForCustomer(
   rawToken: string,
 ): Promise<CustomerBookingView> {
   const result = await getPool().query<CustomerBookingViewRow>(
-    `SELECT b.id, b.status, b.start_at, b.end_at, s.id AS service_id, s.name AS service_name, p.timezone AS provider_timezone
+    `SELECT b.id, b.status, b.start_at, b.end_at, s.id AS service_id, s.name AS service_name,
+            p.timezone AS provider_timezone, s.duration_minutes, s.buffer_before_minutes
      FROM customer_booking_tokens t
      JOIN bookings b ON b.id = t.booking_id
      JOIN services s ON s.id = b.service_id
@@ -538,13 +541,19 @@ export async function getBookingForCustomer(
     throw new BookingNotFoundError();
   }
 
+  // row.start_at/end_at span the full reserved block (buffer_before +
+  // duration + buffer_after, see createBookingCore) -- the customer should
+  // only see the massage window itself.
+  const massageStart = new Date(row.start_at.getTime() + row.buffer_before_minutes * 60_000);
+  const massageEnd = new Date(massageStart.getTime() + row.duration_minutes * 60_000);
+
   return {
     id: row.id,
     status: row.status,
     serviceId: row.service_id,
     serviceName: row.service_name,
-    startAtLocal: formatLocalTime(row.start_at, row.provider_timezone),
-    endAtLocal: formatLocalTime(row.end_at, row.provider_timezone),
+    startAtLocal: formatLocalTime(massageStart, row.provider_timezone),
+    endAtLocal: formatLocalTime(massageEnd, row.provider_timezone),
   };
 }
 

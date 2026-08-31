@@ -3,3 +3,4 @@ dist/
 .env
 .env.test
 .DS_Store
+documents/cli-cheatsheet.md
