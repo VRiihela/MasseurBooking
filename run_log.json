@@ -484,5 +484,19 @@
       "frontend/src/pages/BookingWidget.tsx",
       "frontend/test/BookingWidget.test.tsx"
     ]
+  },
+  {
+    "id": "025-design-system-and-customer-polish",
+    "title": "Shared design system + customer-facing UI polish (BookingWidget, ManageBooking)",
+    "profile": "React Frontend",
+    "timestamp": "2026-09-01T00:00:00.000Z",
+    "dodStatus": "pass",
+    "filesChanged": [
+      "agents/tasks/025-design-system-and-customer-polish.json",
+      "frontend/src/styles/base.css",
+      "frontend/src/main.tsx",
+      "frontend/src/pages/BookingWidget.tsx",
+      "frontend/src/pages/ManageBooking.tsx"
+    ]
   }
 ]

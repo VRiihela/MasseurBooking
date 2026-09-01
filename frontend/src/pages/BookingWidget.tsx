@@ -150,28 +150,31 @@ export function BookingWidget() {
 
   if (step === "confirmation" && confirmedBookingId) {
     return (
-      <div>
+      <div className="page">
         <h1>Request received</h1>
-        <p data-testid="confirmation-pending">
-          Your booking request has been sent and is awaiting the masseur&rsquo;s confirmation.
-          You are not booked yet &mdash; you&rsquo;ll hear back once it&rsquo;s been reviewed.
-        </p>
+        <div className="card">
+          <p data-testid="confirmation-pending">
+            Your booking request has been sent and is awaiting the masseur&rsquo;s confirmation.
+            You are not booked yet &mdash; you&rsquo;ll hear back once it&rsquo;s been reviewed.
+          </p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div>
+    <div className="page">
       <h1>Book a session</h1>
 
       {step === "select-service" && (
-        <section aria-label="Choose a service">
+        <section className="card" aria-label="Choose a service">
           {servicesError && <p role="alert">{servicesError}</p>}
-          {!servicesError && services === null && <p>Loading services&hellip;</p>}
+          {!servicesError && services === null && <p className="loading-text">Loading services&hellip;</p>}
           {services?.map((service) => (
             <button
               key={service.id}
               type="button"
+              className="btn btn-secondary"
               data-testid={`service-option-${service.id}`}
               onClick={() => handleSelectService(service)}
             >
@@ -182,22 +185,24 @@ export function BookingWidget() {
       )}
 
       {step === "select-slot" && selectedService && (
-        <section aria-label="Choose a date and time">
-          <button type="button" onClick={() => setStep("select-service")}>
-            Back
+        <section className="card" aria-label="Choose a date and time">
+          <button type="button" className="btn btn-back" onClick={() => setStep("select-service")}>
+            &lsaquo; Back
           </button>
           <p>{selectedService.name}</p>
           {slotTakenMessage && <p role="alert">{slotTakenMessage}</p>}
-          <label>
-            Date
-            <input
-              type="date"
-              value={date}
-              min={todayLocalDateInput()}
-              onChange={(event) => handleDateChange(event.target.value)}
-            />
-          </label>
-          {slotsLoading && <p>Loading available times&hellip;</p>}
+          <div className="field">
+            <label>
+              Date
+              <input
+                type="date"
+                value={date}
+                min={todayLocalDateInput()}
+                onChange={(event) => handleDateChange(event.target.value)}
+              />
+            </label>
+          </div>
+          {slotsLoading && <p className="loading-text">Loading available times&hellip;</p>}
           {slotsError && <p role="alert">{slotsError}</p>}
           {!slotsLoading && !slotsError && slots?.length === 0 && (
             <p>No available times on this date.</p>
@@ -207,6 +212,7 @@ export function BookingWidget() {
               <button
                 key={slot}
                 type="button"
+                className="btn btn-secondary btn-block"
                 data-testid={`slot-option-${slot}`}
                 onClick={() => handleSelectSlot(slot)}
               >
@@ -218,43 +224,49 @@ export function BookingWidget() {
       )}
 
       {step === "form" && selectedService && selectedSlot && (
-        <section aria-label="Your details">
-          <button type="button" onClick={() => setStep("select-slot")}>
-            Back
+        <section className="card" aria-label="Your details">
+          <button type="button" className="btn btn-back" onClick={() => setStep("select-slot")}>
+            &lsaquo; Back
           </button>
           <p>
             {selectedService.name} &mdash; {formatSlotLocal(selectedSlot)}
           </p>
           <form onSubmit={handleSubmit} noValidate>
             {formError && <p role="alert">{formError}</p>}
-            <label>
-              Name
-              <input
-                type="text"
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-                required
-              />
-            </label>
-            <label>
-              Email
-              <input
-                type="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                required
-              />
-            </label>
-            <label>
-              Phone
-              <input
-                type="tel"
-                value={phone}
-                onChange={(event) => setPhone(event.target.value)}
-                required
-              />
-            </label>
-            <button type="submit" data-testid="submit-booking" disabled={submitting}>
+            <div className="field">
+              <label>
+                Name
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                  required
+                />
+              </label>
+            </div>
+            <div className="field">
+              <label>
+                Email
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  required
+                />
+              </label>
+            </div>
+            <div className="field">
+              <label>
+                Phone
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={(event) => setPhone(event.target.value)}
+                  required
+                />
+              </label>
+            </div>
+            <button type="submit" className="btn btn-primary" data-testid="submit-booking" disabled={submitting}>
               {submitting ? "Submitting…" : "Request booking"}
             </button>
           </form>

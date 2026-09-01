@@ -158,16 +158,16 @@ export function ManageBooking({ bookingId }: Props) {
 
   if (loadState.kind === "loading") {
     return (
-      <div>
+      <div className="page">
         <h1>Your booking</h1>
-        <p>Loading&hellip;</p>
+        <p className="loading-text">Loading&hellip;</p>
       </div>
     );
   }
 
   if (loadState.kind === "not-found") {
     return (
-      <div>
+      <div className="page">
         <h1>Booking not found</h1>
         <p role="alert">
           We couldn&rsquo;t find this booking. Please use the link from your confirmation email.
@@ -178,12 +178,14 @@ export function ManageBooking({ bookingId }: Props) {
 
   if (loadState.kind === "rescheduled") {
     return (
-      <div>
+      <div className="page">
         <h1>Booking rescheduled</h1>
-        <p data-testid="reschedule-success">
-          Your booking has been moved to {formatSlotLocal(loadState.newStartAt)}. We&rsquo;ve sent
-          a new confirmation email with an updated link to manage this booking.
-        </p>
+        <div className="card">
+          <p data-testid="reschedule-success">
+            Your booking has been moved to {formatSlotLocal(loadState.newStartAt)}. We&rsquo;ve sent
+            a new confirmation email with an updated link to manage this booking.
+          </p>
+        </div>
       </div>
     );
   }
@@ -192,93 +194,100 @@ export function ManageBooking({ bookingId }: Props) {
   const isModifiable = view.status === "pending" || view.status === "confirmed";
 
   return (
-    <div>
+    <div className="page">
       <h1>Your booking</h1>
-      <p>
-        {view.service_name} &mdash; {view.start_at_local} to {view.end_at_local}
-      </p>
-      <p>Status: {view.status}</p>
+      <div className="card">
+        <p>
+          {view.service_name} &mdash; {view.start_at_local} to {view.end_at_local}
+        </p>
+        <p>Status: {view.status}</p>
 
-      {actionError && <p role="alert">{actionError}</p>}
+        {actionError && <p role="alert">{actionError}</p>}
 
-      {isModifiable && mode === "view" && (
-        <section aria-label="Manage this booking">
-          <button type="button" onClick={() => handleStartReschedule(view.service_id)}>
-            Reschedule
-          </button>
-          <button type="button" onClick={() => setMode("cancel-confirm")}>
-            Cancel booking
-          </button>
-        </section>
-      )}
+        {isModifiable && mode === "view" && (
+          <section aria-label="Manage this booking">
+            <button type="button" className="btn btn-primary" onClick={() => handleStartReschedule(view.service_id)}>
+              Reschedule
+            </button>
+            <button type="button" className="btn btn-secondary" onClick={() => setMode("cancel-confirm")}>
+              Cancel booking
+            </button>
+          </section>
+        )}
 
-      {isModifiable && mode === "cancel-confirm" && (
-        <section aria-label="Confirm cancellation">
-          <p>Are you sure you want to cancel this booking? This cannot be undone.</p>
-          <button type="button" disabled={submitting} onClick={() => void handleCancel()}>
-            {submitting ? "Cancelling…" : "Confirm cancellation"}
-          </button>
-          <button type="button" onClick={() => setMode("view")}>
-            Never mind
-          </button>
-        </section>
-      )}
+        {isModifiable && mode === "cancel-confirm" && (
+          <section aria-label="Confirm cancellation">
+            <p>Are you sure you want to cancel this booking? This cannot be undone.</p>
+            <button type="button" className="btn btn-primary" disabled={submitting} onClick={() => void handleCancel()}>
+              {submitting ? "Cancelling…" : "Confirm cancellation"}
+            </button>
+            <button type="button" className="btn btn-secondary" onClick={() => setMode("view")}>
+              Never mind
+            </button>
+          </section>
+        )}
 
-      {isModifiable && mode === "reschedule" && (
-        <section aria-label="Reschedule this booking">
-          <button
-            type="button"
-            onClick={() => {
-              setMode("view");
-              setSlotTakenMessage(null);
-            }}
-          >
-            Back
-          </button>
-          {slotTakenMessage && <p role="alert">{slotTakenMessage}</p>}
-          <label>
-            Date
-            <input
-              type="date"
-              value={date}
-              onChange={(event) => handleDateChange(event.target.value, view.service_id)}
-            />
-          </label>
-          {slotsLoading && <p>Loading available times&hellip;</p>}
-          {slotsError && <p role="alert">{slotsError}</p>}
-          {!slotsLoading && !slotsError && slots?.length === 0 && (
-            <p>No available times on this date.</p>
-          )}
-          <div>
-            {slots?.map((slot) => (
-              <button
-                key={slot}
-                type="button"
-                data-testid={`slot-option-${slot}`}
-                onClick={() => setSelectedSlot(slot)}
-              >
-                {formatSlotLocal(slot)}
-              </button>
-            ))}
-          </div>
-
-          {selectedSlot && (
-            <div>
-              <p>Move this booking to {formatSlotLocal(selectedSlot)}?</p>
-              <button
-                type="button"
-                disabled={submitting}
-                onClick={() => void handleConfirmReschedule(view.service_id)}
-              >
-                {submitting ? "Rescheduling…" : "Confirm reschedule"}
-              </button>
-              <button type="button" onClick={() => setSelectedSlot(null)}>
-                Choose a different time
-              </button>
+        {isModifiable && mode === "reschedule" && (
+          <section aria-label="Reschedule this booking">
+            <button
+              type="button"
+              className="btn btn-back"
+              onClick={() => {
+                setMode("view");
+                setSlotTakenMessage(null);
+              }}
+            >
+              &lsaquo; Back
+            </button>
+            {slotTakenMessage && <p role="alert">{slotTakenMessage}</p>}
+            <div className="field">
+              <label>
+                Date
+                <input
+                  type="date"
+                  value={date}
+                  onChange={(event) => handleDateChange(event.target.value, view.service_id)}
+                />
+              </label>
             </div>
-          )}
-        </section>
-      )}
+            {slotsLoading && <p className="loading-text">Loading available times&hellip;</p>}
+            {slotsError && <p role="alert">{slotsError}</p>}
+            {!slotsLoading && !slotsError && slots?.length === 0 && (
+              <p>No available times on this date.</p>
+            )}
+            <div>
+              {slots?.map((slot) => (
+                <button
+                  key={slot}
+                  type="button"
+                  className="btn btn-secondary btn-block"
+                  data-testid={`slot-option-${slot}`}
+                  onClick={() => setSelectedSlot(slot)}
+                >
+                  {formatSlotLocal(slot)}
+                </button>
+              ))}
+            </div>
+
+            {selectedSlot && (
+              <div>
+                <p>Move this booking to {formatSlotLocal(selectedSlot)}?</p>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  disabled={submitting}
+                  onClick={() => void handleConfirmReschedule(view.service_id)}
+                >
+                  {submitting ? "Rescheduling…" : "Confirm reschedule"}
+                </button>
+                <button type="button" className="btn btn-secondary" onClick={() => setSelectedSlot(null)}>
+                  Choose a different time
+                </button>
+              </div>
+            )}
+          </section>
+        )}
+      </div>
     </div>
   );
 }
