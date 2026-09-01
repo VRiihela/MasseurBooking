@@ -7,19 +7,20 @@
 }
 
 .admin-services li {
-  margin-bottom: 1rem;
-  padding: 0.75rem;
-  border: 1px solid #ccc;
+  margin-bottom: var(--space-4);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
 }
 
 .admin-service-inactive {
   opacity: 0.55;
-  background-color: #f2f2f2;
+  background-color: var(--color-bg);
 }
 
 .admin-services label {
   display: block;
-  margin-bottom: 0.5rem;
+  margin-bottom: var(--space-2);
 }
 
 .admin-services input {

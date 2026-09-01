@@ -123,18 +123,24 @@ export function AdminDashboard({ onSessionEnded }: Props) {
   }
 
   return (
-    <div>
+    <div className="page">
       <h1>Bookings</h1>
-      <button type="button" onClick={() => void handleLogout()}>
+      <button type="button" className="btn btn-back" onClick={() => void handleLogout()}>
         Log out
       </button>
 
       <section aria-label="Switch view">
-        <button type="button" aria-pressed={viewMode === "list"} onClick={() => setViewMode("list")}>
+        <button
+          type="button"
+          className={`btn ${viewMode === "list" ? "btn-primary" : "btn-secondary"}`}
+          aria-pressed={viewMode === "list"}
+          onClick={() => setViewMode("list")}
+        >
           List
         </button>
         <button
           type="button"
+          className={`btn ${viewMode === "calendar" ? "btn-primary" : "btn-secondary"}`}
           aria-pressed={viewMode === "calendar"}
           onClick={() => setViewMode("calendar")}
         >
@@ -142,12 +148,18 @@ export function AdminDashboard({ onSessionEnded }: Props) {
         </button>
         <button
           type="button"
+          className={`btn ${viewMode === "availability" ? "btn-primary" : "btn-secondary"}`}
           aria-pressed={viewMode === "availability"}
           onClick={() => setViewMode("availability")}
         >
           Availability
         </button>
-        <button type="button" aria-pressed={viewMode === "services"} onClick={() => setViewMode("services")}>
+        <button
+          type="button"
+          className={`btn ${viewMode === "services" ? "btn-primary" : "btn-secondary"}`}
+          aria-pressed={viewMode === "services"}
+          onClick={() => setViewMode("services")}
+        >
           Services
         </button>
       </section>
@@ -163,6 +175,7 @@ export function AdminDashboard({ onSessionEnded }: Props) {
               <button
                 key={filter}
                 type="button"
+                className={`btn ${statusFilter === filter ? "btn-primary" : "btn-secondary"}`}
                 aria-pressed={statusFilter === filter}
                 onClick={() => setStatusFilter(filter)}
               >
@@ -173,12 +186,12 @@ export function AdminDashboard({ onSessionEnded }: Props) {
 
           {actionError && <p role="alert">{actionError}</p>}
           {listError && <p role="alert">{listError}</p>}
-          {!listError && bookings === null && <p>Loading bookings&hellip;</p>}
+          {!listError && bookings === null && <p className="loading-text">Loading bookings&hellip;</p>}
           {bookings?.length === 0 && <p>No bookings in this view.</p>}
 
           <ul>
             {bookings?.map((booking) => (
-              <li key={booking.id} data-testid={`booking-${booking.id}`}>
+              <li key={booking.id} className="card" data-testid={`booking-${booking.id}`}>
                 <p>
                   {booking.service_name} &mdash; {booking.start_at_local} to {booking.end_at_local}
                 </p>
@@ -190,24 +203,27 @@ export function AdminDashboard({ onSessionEnded }: Props) {
 
                 {booking.status === "pending" && (
                   <>
-                    <button type="button" onClick={() => void handleConfirm(booking.id)}>
+                    <button type="button" className="btn btn-primary" onClick={() => void handleConfirm(booking.id)}>
                       Confirm
                     </button>
                     {decliningId === booking.id ? (
                       <>
-                        <label>
-                          Reason (optional)
-                          <textarea
-                            value={declineReason}
-                            maxLength={500}
-                            onChange={(event) => setDeclineReason(event.target.value)}
-                          />
-                        </label>
-                        <button type="button" onClick={() => void handleDecline(booking.id)}>
+                        <div className="field">
+                          <label>
+                            Reason (optional)
+                            <textarea
+                              value={declineReason}
+                              maxLength={500}
+                              onChange={(event) => setDeclineReason(event.target.value)}
+                            />
+                          </label>
+                        </div>
+                        <button type="button" className="btn btn-primary" onClick={() => void handleDecline(booking.id)}>
                           Confirm decline
                         </button>
                         <button
                           type="button"
+                          className="btn btn-back"
                           onClick={() => {
                             setDecliningId(null);
                             setDeclineReason("");
@@ -219,6 +235,7 @@ export function AdminDashboard({ onSessionEnded }: Props) {
                     ) : (
                       <button
                         type="button"
+                        className="btn btn-secondary"
                         onClick={() => {
                           setDecliningId(booking.id);
                           setDeclineReason("");
@@ -233,19 +250,22 @@ export function AdminDashboard({ onSessionEnded }: Props) {
                 {booking.status === "confirmed" &&
                   (cancellingId === booking.id ? (
                     <>
-                      <label>
-                        Reason (optional)
-                        <textarea
-                          value={cancelReason}
-                          maxLength={500}
-                          onChange={(event) => setCancelReason(event.target.value)}
-                        />
-                      </label>
-                      <button type="button" onClick={() => void handleCancel(booking.id)}>
+                      <div className="field">
+                        <label>
+                          Reason (optional)
+                          <textarea
+                            value={cancelReason}
+                            maxLength={500}
+                            onChange={(event) => setCancelReason(event.target.value)}
+                          />
+                        </label>
+                      </div>
+                      <button type="button" className="btn btn-primary" onClick={() => void handleCancel(booking.id)}>
                         Confirm cancel
                       </button>
                       <button
                         type="button"
+                        className="btn btn-back"
                         onClick={() => {
                           setCancellingId(null);
                           setCancelReason("");
@@ -257,6 +277,7 @@ export function AdminDashboard({ onSessionEnded }: Props) {
                   ) : (
                     <button
                       type="button"
+                      className="btn btn-secondary"
                       onClick={() => {
                         setCancellingId(booking.id);
                         setCancelReason("");

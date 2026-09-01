@@ -171,6 +171,22 @@ select:focus {
   font-size: var(--font-size-sm);
 }
 
+/* Neutral/success messages (e.g. "login link sent", batch-block results)
+   are already marked role="status" -- same attribute-selector approach as
+   [role="alert"] above, just without the danger tone. */
+[role="status"] {
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+}
+
+a {
+  color: var(--color-primary);
+}
+
 .loading-text {
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);

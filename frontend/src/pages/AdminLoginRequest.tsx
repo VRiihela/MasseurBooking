@@ -39,27 +39,31 @@ export function AdminLoginRequest() {
   }
 
   return (
-    <div>
+    <div className="page">
       <h1>Masseur login</h1>
-      {resultMessage ? (
-        <p role="status">{resultMessage}</p>
-      ) : (
-        <form onSubmit={handleSubmit} noValidate>
-          {formError && <p role="alert">{formError}</p>}
-          <label>
-            Email
-            <input
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              required
-            />
-          </label>
-          <button type="submit" data-testid="request-login-link" disabled={submitting}>
-            {submitting ? "Sending…" : "Send login link"}
-          </button>
-        </form>
-      )}
+      <div className="card">
+        {resultMessage ? (
+          <p role="status">{resultMessage}</p>
+        ) : (
+          <form onSubmit={handleSubmit} noValidate>
+            {formError && <p role="alert">{formError}</p>}
+            <div className="field">
+              <label>
+                Email
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  required
+                />
+              </label>
+            </div>
+            <button type="submit" className="btn btn-primary" data-testid="request-login-link" disabled={submitting}>
+              {submitting ? "Sending…" : "Send login link"}
+            </button>
+          </form>
+        )}
+      </div>
     </div>
   );
 }

@@ -498,5 +498,24 @@
       "frontend/src/pages/BookingWidget.tsx",
       "frontend/src/pages/ManageBooking.tsx"
     ]
+  },
+  {
+    "id": "026-admin-ui-polish",
+    "title": "Apply the shared design system to admin-facing pages (follow-up to task 025)",
+    "profile": "React Frontend",
+    "timestamp": "2026-09-01T00:00:00.000Z",
+    "dodStatus": "pass",
+    "filesChanged": [
+      "agents/tasks/026-admin-ui-polish.json",
+      "frontend/src/styles/base.css",
+      "frontend/src/pages/AdminDashboard.tsx",
+      "frontend/src/pages/AdminAvailability.tsx",
+      "frontend/src/pages/AdminLoginRequest.tsx",
+      "frontend/src/pages/AdminLoginCallback.tsx",
+      "frontend/src/pages/AdminServices.tsx",
+      "frontend/src/pages/AdminCalendar.tsx",
+      "frontend/src/pages/AdminCalendar.css",
+      "frontend/src/pages/AdminServices.css"
+    ]
   }
 ]

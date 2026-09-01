@@ -142,10 +142,10 @@ export function AdminAvailability({ onSessionEnded }: Props) {
   }
 
   return (
-    <div className="admin-availability">
+    <div className="admin-availability page">
       {loadError && <p role="alert">{loadError}</p>}
       {deleteError && <p role="alert">{deleteError}</p>}
-      {!loadError && rules === null && <p>Loading availability&hellip;</p>}
+      {!loadError && rules === null && <p className="loading-text">Loading availability&hellip;</p>}
 
       {rules !== null && (
         <ul className="admin-availability-weekdays">
@@ -154,7 +154,7 @@ export function AdminAvailability({ onSessionEnded }: Props) {
             const form = addForms[weekday.value];
 
             return (
-              <li key={weekday.value} data-testid={`weekday-${weekday.value}`}>
+              <li key={weekday.value} className="card" data-testid={`weekday-${weekday.value}`}>
                 <h2>{weekday.label}</h2>
 
                 {dayRules.length === 0 ? (
@@ -164,7 +164,7 @@ export function AdminAvailability({ onSessionEnded }: Props) {
                     {dayRules.map((rule) => (
                       <li key={rule.id} data-testid={`rule-${rule.id}`}>
                         {rule.start_time.slice(0, 5)}&ndash;{rule.end_time.slice(0, 5)}
-                        <button type="button" onClick={() => void handleDeleteRule(rule.id)}>
+                        <button type="button" className="btn btn-secondary" onClick={() => void handleDeleteRule(rule.id)}>
                           Delete
                         </button>
                       </li>
@@ -173,23 +173,27 @@ export function AdminAvailability({ onSessionEnded }: Props) {
                 )}
 
                 <div>
-                  <label>
-                    Start time
-                    <input
-                      type="time"
-                      value={form.start}
-                      onChange={(event) => updateAddForm(weekday.value, { start: event.target.value })}
-                    />
-                  </label>
-                  <label>
-                    End time
-                    <input
-                      type="time"
-                      value={form.end}
-                      onChange={(event) => updateAddForm(weekday.value, { end: event.target.value })}
-                    />
-                  </label>
-                  <button type="button" onClick={() => void handleAddRule(weekday.value)}>
+                  <div className="field">
+                    <label>
+                      Start time
+                      <input
+                        type="time"
+                        value={form.start}
+                        onChange={(event) => updateAddForm(weekday.value, { start: event.target.value })}
+                      />
+                    </label>
+                  </div>
+                  <div className="field">
+                    <label>
+                      End time
+                      <input
+                        type="time"
+                        value={form.end}
+                        onChange={(event) => updateAddForm(weekday.value, { end: event.target.value })}
+                      />
+                    </label>
+                  </div>
+                  <button type="button" className="btn btn-primary" onClick={() => void handleAddRule(weekday.value)}>
                     Add time range
                   </button>
                   {form.error && <p role="alert">{form.error}</p>}

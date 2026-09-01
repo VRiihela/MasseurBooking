@@ -444,13 +444,11 @@ export function AdminCalendar({ onSessionEnded }: Props) {
   return (
     <div className="admin-calendar">
       <section aria-label="Calendar mode">
-        <button type="button" aria-pressed={mode === "view"} onClick={() => handleModeChange("view")}>
-          View
-        </button>
         <button
           type="button"
+          className={`btn ${mode === "manage" ? "btn-primary" : "btn-secondary"}`}
           aria-pressed={mode === "manage"}
-          onClick={() => handleModeChange("manage")}
+          onClick={() => handleModeChange(mode === "manage" ? "view" : "manage")}
         >
           Manage availability
         </button>

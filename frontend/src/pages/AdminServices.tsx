@@ -264,10 +264,10 @@ export function AdminServices({ onSessionEnded }: Props) {
                     onChange={(patch) => setEditForm((current) => ({ ...current, ...patch }))}
                   />
                   {editForm.error && <p role="alert">{editForm.error}</p>}
-                  <button type="button" onClick={() => void handleSaveEdit(service.id)}>
+                  <button type="button" className="btn btn-primary" onClick={() => void handleSaveEdit(service.id)}>
                     Save
                   </button>
-                  <button type="button" onClick={cancelEdit}>
+                  <button type="button" className="btn btn-back" onClick={cancelEdit}>
                     Cancel
                   </button>
                 </>
@@ -280,10 +280,10 @@ export function AdminServices({ onSessionEnded }: Props) {
                   <p>Massage duration: {service.duration_minutes} minutes</p>
                   <p>Buffer before: {service.buffer_before_minutes} minutes</p>
                   <p>Buffer after: {service.buffer_after_minutes} minutes</p>
-                  <button type="button" onClick={() => startEdit(service)}>
+                  <button type="button" className="btn btn-secondary" onClick={() => startEdit(service)}>
                     Edit
                   </button>
-                  <button type="button" onClick={() => void handleToggleActive(service)}>
+                  <button type="button" className="btn btn-secondary" onClick={() => void handleToggleActive(service)}>
                     {service.active ? "Deactivate" : "Activate"}
                   </button>
                 </>
@@ -300,7 +300,7 @@ export function AdminServices({ onSessionEnded }: Props) {
           onChange={(patch) => setCreateForm((current) => ({ ...current, ...patch }))}
         />
         {createForm.error && <p role="alert">{createForm.error}</p>}
-        <button type="button" onClick={() => void handleCreate()}>
+        <button type="button" className="btn btn-primary" onClick={() => void handleCreate()}>
           Add service
         </button>
       </section>

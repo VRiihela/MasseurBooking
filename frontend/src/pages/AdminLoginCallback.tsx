@@ -33,7 +33,7 @@ export function AdminLoginCallback() {
 
   if (status === "missing-token") {
     return (
-      <div>
+      <div className="page">
         <h1>Invalid login link</h1>
         <p role="alert">This login link is missing its token.</p>
         <RequestNewLinkLink />
@@ -43,7 +43,7 @@ export function AdminLoginCallback() {
 
   if (status === "error") {
     return (
-      <div>
+      <div className="page">
         <h1>Login link problem</h1>
         <p role="alert">{errorMessage}</p>
         <RequestNewLinkLink />
@@ -52,7 +52,7 @@ export function AdminLoginCallback() {
   }
 
   return (
-    <div>
+    <div className="page">
       <h1>Signing you in&hellip;</h1>
     </div>
   );

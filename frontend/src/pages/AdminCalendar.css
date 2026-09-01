@@ -9,17 +9,40 @@
   font-size: 0.8rem;
 }
 
-/* react-big-calendar's default toolbar lays its three sections out in a row
-   that overflows a phone width; stack them instead. */
+/* react-big-calendar's default toolbar lays its three sections (nav
+   buttons, date label, view switcher) out in a row that overflows a phone
+   width. Rather than stacking all three as separate rows -- that's just
+   react-big-calendar's own rendered section order (confirmed in its
+   Toolbar.js: .rbc-btn-group (nav), .rbc-toolbar-label, .rbc-btn-group
+   (view switcher)), not a deliberate grouping -- group the nav buttons with
+   the date label on row 1 and force the view-switcher group onto its own
+   row 2. */
+/* react-big-calendar's own stylesheet forces flex-direction: column below
+   767px (a wider breakpoint than the 640px one used here), and since that's
+   the only rule setting flex-direction at all in this range, it silently
+   wins unless overridden explicitly -- confirmed by inspecting computed
+   styles in a real browser: without the line below, flex-direction actually
+   resolves to "column", not "row", which turns flex-wrap's row-wrapping
+   into column-wrapping (side-by-side columns) instead. */
 .admin-calendar-grid .rbc-toolbar {
   display: flex;
-  flex-direction: column;
-  align-items: stretch;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 0.5rem;
 }
 
+.admin-calendar-grid .rbc-toolbar .rbc-toolbar-label {
+  flex: 1;
+  text-align: center;
+}
+
+.admin-calendar-grid .rbc-toolbar .rbc-btn-group:last-of-type {
+  flex-basis: 100%;
+}
+
 .admin-calendar-grid .rbc-toolbar button {
-  padding: 0.5rem;
+  padding: var(--space-2);
 }
 
 .admin-calendar-grid .rbc-event {
@@ -58,26 +81,28 @@
 }
 
 .admin-calendar-detail {
-  margin-top: 0.75rem;
-  padding: 0.75rem;
-  border: 1px solid #333;
+  margin-top: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background-color: var(--color-surface);
 }
 
 .admin-calendar-detail button {
-  margin-top: 0.5rem;
-  margin-right: 0.5rem;
-  padding: 0.5rem;
+  margin-top: var(--space-2);
+  margin-right: var(--space-2);
+  padding: var(--space-2);
 }
 
 .admin-calendar-detail label {
   display: block;
-  margin-top: 0.5rem;
+  margin-top: var(--space-2);
 }
 
 .admin-calendar-detail textarea {
   display: block;
   width: 100%;
-  margin-top: 0.25rem;
+  margin-top: var(--space-1);
 }
 
 @media (min-width: 640px) {
@@ -87,7 +112,11 @@
   }
 
   .admin-calendar-grid .rbc-toolbar {
-    flex-direction: row;
+    flex-wrap: nowrap;
     justify-content: space-between;
+  }
+
+  .admin-calendar-grid .rbc-toolbar .rbc-btn-group:last-of-type {
+    flex-basis: auto;
   }
 }
