@@ -517,5 +517,17 @@
       "frontend/src/pages/AdminCalendar.css",
       "frontend/src/pages/AdminServices.css"
     ]
+  },
+  {
+    "id": "027-show-blocked-days-in-view-mode",
+    "title": "Show blocked availability on the calendar in View mode, not only Manage-availability mode",
+    "profile": "React Frontend",
+    "timestamp": "2026-09-01T00:00:00.000Z",
+    "dodStatus": "pass",
+    "filesChanged": [
+      "agents/tasks/027-show-blocked-days-in-view-mode.json",
+      "frontend/src/pages/AdminCalendar.tsx",
+      "frontend/test/AdminCalendar.test.tsx"
+    ]
   }
 ]

@@ -644,24 +644,74 @@ describe("formatBatchResult", () => {
 });
 
 describe("AdminCalendar Manage-availability mode", () => {
-  it("defaults to View mode: no availability-exceptions fetch happens until Manage mode is entered", async () => {
+  // Task 020 originally deferred this fetch until Manage mode was entered,
+  // specifically to keep View mode's network behavior unchanged from task
+  // 018. Task 027 revisits that: blocked time needs to be visible in View
+  // mode too, so the fetch now runs unconditionally on mount (same timing as
+  // the bookings fetch) rather than lazily on first entry into Manage mode.
+  it("fetches blocked availability-exceptions on mount (View mode, the default) and does not re-fetch when Manage mode is entered", async () => {
     localStorage.setItem(SESSION_TOKEN_STORAGE_KEY, TOKEN);
-    const { fetchMock } = stubFetch([PENDING_BOOKING]);
+    const { fetchMock } = stubFetch([PENDING_BOOKING], { list: () => jsonResponse([BLOCKED_EXCEPTION]) });
 
     render(<AdminCalendar onSessionEnded={() => {}} />);
     await screen.findByTestId("admin-calendar-grid");
 
-    expect(
-      fetchMock.mock.calls.some(([url]) => (url as string).includes("/admin/availability-exceptions")),
-    ).toBe(false);
+    await waitFor(() => {
+      expect(
+        fetchMock.mock.calls.filter(([url]) => (url as string).includes("/admin/availability-exceptions"))
+          .length,
+      ).toBe(1);
+    });
 
     fireEvent.click(screen.getByRole("button", { name: "Manage availability" }));
 
     await waitFor(() => {
-      expect(
-        fetchMock.mock.calls.some(([url]) => (url as string).includes("/admin/availability-exceptions")),
-      ).toBe(true);
+      expect(screen.getByRole("button", { name: "Manage availability" })).toHaveAttribute(
+        "aria-pressed",
+        "true",
+      );
     });
+    // Still exactly one call -- entering Manage mode reuses what was already
+    // fetched on mount rather than re-requesting it.
+    expect(
+      fetchMock.mock.calls.filter(([url]) => (url as string).includes("/admin/availability-exceptions"))
+        .length,
+    ).toBe(1);
+  });
+
+  it("renders an existing blocked exception in View mode, the default, without needing to enter Manage mode", async () => {
+    localStorage.setItem(SESSION_TOKEN_STORAGE_KEY, TOKEN);
+    stubFetch([PENDING_BOOKING], { list: () => jsonResponse([BLOCKED_EXCEPTION]) });
+
+    render(<AdminCalendar onSessionEnded={() => {}} />);
+    await screen.findByTestId("admin-calendar-grid");
+
+    const blockedEvent = await screen.findByText("Blocked");
+    expect(blockedEvent.closest(".rbc-event")).toHaveClass("admin-calendar-event-blocked");
+  });
+
+  it("tapping a blocked exception in View mode shows a read-only detail instead of unblocking it", async () => {
+    localStorage.setItem(SESSION_TOKEN_STORAGE_KEY, TOKEN);
+    const { fetchMock } = stubFetch([], { list: () => jsonResponse([BLOCKED_EXCEPTION]) });
+
+    render(<AdminCalendar onSessionEnded={() => {}} />);
+    await screen.findByTestId("admin-calendar-grid");
+
+    const blockedEvent = await screen.findByText("Blocked");
+    fireEvent.click(blockedEvent);
+
+    await screen.findByRole("dialog", { name: "Blocked time details" });
+
+    // Still on the grid -- View mode must not delete it. Two matches now:
+    // the original grid event plus the read-only detail's own heading.
+    expect(screen.getAllByText("Blocked")).toHaveLength(2);
+
+    const deleteCalls = fetchMock.mock.calls.filter(
+      ([url, init]) =>
+        (url as string).includes(`/admin/availability-exceptions/${BLOCKED_EXCEPTION.id}`) &&
+        (init as RequestInit | undefined)?.method === "DELETE",
+    );
+    expect(deleteCalls).toHaveLength(0);
   });
 
   it("renders an existing blocked exception distinctly from booking events once in Manage mode", async () => {
@@ -726,14 +776,23 @@ describe("AdminCalendar Manage-availability mode", () => {
     render(<AdminCalendar onSessionEnded={() => {}} />);
     const grid = await screen.findByTestId("admin-calendar-grid");
 
-    // selectable is false in View mode, so react-big-calendar attaches no
-    // drag-select affordance at all -- confirmed indirectly by there being no
-    // availability-exceptions traffic no matter what's clicked in the grid.
+    // Blocked exceptions are now fetched unconditionally on mount (task
+    // 027), so there IS availability-exceptions traffic by this point -- the
+    // one call from mount. What this test actually needs to prove is that
+    // clicking inside the grid triggers no *additional* traffic, since
+    // selectable is false in View mode and react-big-calendar attaches no
+    // drag-select affordance at all.
+    const exceptionsCallCountBefore = fetchMock.mock.calls.filter(([url]) =>
+      (url as string).includes("/admin/availability-exceptions"),
+    ).length;
+    expect(exceptionsCallCountBefore).toBe(1);
+
     fireEvent.mouseDown(grid);
     fireEvent.mouseUp(grid);
 
     expect(
-      fetchMock.mock.calls.some(([url]) => (url as string).includes("/admin/availability-exceptions")),
-    ).toBe(false);
+      fetchMock.mock.calls.filter(([url]) => (url as string).includes("/admin/availability-exceptions"))
+        .length,
+    ).toBe(exceptionsCallCountBefore);
   });
 });

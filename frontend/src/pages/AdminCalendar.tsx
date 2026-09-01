@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { DateTime } from "luxon";
 import { Calendar, luxonLocalizer, Views, type SlotInfo, type View } from "react-big-calendar";
 import "react-big-calendar/lib/css/react-big-calendar.css";
@@ -156,6 +156,15 @@ function dateAtLocalTime(year: number, month: number, day: number, time: string)
   return new Date(year, month - 1, day, hours, minutes, seconds);
 }
 
+function formatDateLong(date: Date): string {
+  return new Intl.DateTimeFormat(undefined, {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  }).format(date);
+}
+
 function toBookingEvent(booking: AdminBooking): CalendarEvent {
   return {
     kind: "booking",
@@ -218,10 +227,10 @@ export function AdminCalendar({ onSessionEnded }: Props) {
   const [mode, setMode] = useState<CalendarMode>("view");
   const [exceptions, setExceptions] = useState<AvailabilityException[] | null>(null);
   const [exceptionsError, setExceptionsError] = useState<string | null>(null);
+  const [selectedException, setSelectedException] = useState<AvailabilityException | null>(null);
   const [slotError, setSlotError] = useState<string | null>(null);
   const [unblockError, setUnblockError] = useState<string | null>(null);
   const [batchResult, setBatchResult] = useState<BatchBlockResult | null>(null);
-  const exceptionsRequestedRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -252,14 +261,11 @@ export function AdminCalendar({ onSessionEnded }: Props) {
     };
   }, [onSessionEnded]);
 
-  // Exceptions are fetched only once Manage-availability mode is actually
-  // entered, not on mount -- View mode's network behavior (and therefore its
-  // existing tests) stays identical to what task 018 shipped.
+  // Fetched unconditionally on mount, same timing as the bookings fetch above
+  // -- blocked time needs to be visible in View mode (the default), not only
+  // once Manage-availability mode is entered. Block-creation/deletion still
+  // stays Manage-mode-only; only visibility of existing blocks changed.
   useEffect(() => {
-    if (mode !== "manage" || exceptionsRequestedRef.current) {
-      return;
-    }
-    exceptionsRequestedRef.current = true;
     let cancelled = false;
     setExceptionsError(null);
 
@@ -277,26 +283,20 @@ export function AdminCalendar({ onSessionEnded }: Props) {
           onSessionEnded();
           return;
         }
-        exceptionsRequestedRef.current = false;
         setExceptionsError("Could not load blocked dates. Please try again shortly.");
       });
 
     return () => {
       cancelled = true;
     };
-  }, [mode, onSessionEnded]);
+  }, [onSessionEnded]);
 
   const bookingEvents = useMemo(
     () => (bookings ?? []).filter((booking) => booking.status !== "cancelled").map(toBookingEvent),
     [bookings],
   );
 
-  const exceptionEvents = useMemo(() => {
-    if (mode !== "manage" || !exceptions) {
-      return [];
-    }
-    return exceptions.map(toExceptionEvent);
-  }, [mode, exceptions]);
+  const exceptionEvents = useMemo(() => (exceptions ?? []).map(toExceptionEvent), [exceptions]);
 
   const events = useMemo(() => [...bookingEvents, ...exceptionEvents], [bookingEvents, exceptionEvents]);
 
@@ -313,9 +313,21 @@ export function AdminCalendar({ onSessionEnded }: Props) {
     if (event.kind === "booking") {
       resetActionState();
       setSelectedBooking(event.booking);
+      // The popup has no backdrop, so a booking and a blocked-time detail
+      // could otherwise both stay open from two earlier taps at once.
+      setSelectedException(null);
       return;
     }
-    void handleUnblock(event.exception);
+    // Manage mode is the deliberate gate for block/unblock mutations -- a tap
+    // there still unblocks immediately, unchanged. Outside Manage mode
+    // (including View mode, now that blocked events are visible there too),
+    // show a read-only detail instead of silently deleting the block.
+    if (mode === "manage") {
+      void handleUnblock(event.exception);
+      return;
+    }
+    closeBookingDetail();
+    setSelectedException(event.exception);
   }
 
   // Selecting a different booking event without closing the current popup
@@ -441,6 +453,8 @@ export function AdminCalendar({ onSessionEnded }: Props) {
     setBatchResult(outcome.result);
   }
 
+  const selectedExceptionEvent = selectedException ? toExceptionEvent(selectedException) : null;
+
   return (
     <div className="admin-calendar">
       <section aria-label="Calendar mode">
@@ -456,10 +470,10 @@ export function AdminCalendar({ onSessionEnded }: Props) {
 
       {loadError && <p role="alert">{loadError}</p>}
       {!loadError && bookings === null && <p>Loading calendar&hellip;</p>}
+      {exceptionsError && <p role="alert">{exceptionsError}</p>}
 
       {mode === "manage" && (
         <>
-          {exceptionsError && <p role="alert">{exceptionsError}</p>}
           {slotError && <p role="alert">{slotError}</p>}
           {unblockError && <p role="alert">{unblockError}</p>}
           {batchResult && <p role="status">{formatBatchResult(batchResult)}</p>}
@@ -580,6 +594,16 @@ export function AdminCalendar({ onSessionEnded }: Props) {
             ))}
 
           <button type="button" onClick={closeBookingDetail}>
+            Close
+          </button>
+        </div>
+      )}
+
+      {selectedExceptionEvent && (
+        <div className="admin-calendar-detail" role="dialog" aria-label="Blocked time details">
+          <p>{selectedExceptionEvent.title}</p>
+          <p>{formatDateLong(selectedExceptionEvent.start)}</p>
+          <button type="button" onClick={() => setSelectedException(null)}>
             Close
           </button>
         </div>
