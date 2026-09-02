@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { ApiError, createBooking, getAvailability, getServices } from "../api/client";
 import type { Service } from "../api/types";
+import { formatSlotLocal } from "../lib/formatSlotLocal";
 
 type Step = "select-service" | "select-slot" | "form" | "confirmation";
 
@@ -8,16 +9,6 @@ type Step = "select-service" | "select-slot" | "form" | "confirmation";
 // backend is the sole source of truth and re-validates regardless. This is
 // just enough to catch obviously malformed input before a round trip.
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-function formatSlotLocal(isoUtc: string): string {
-  return new Intl.DateTimeFormat(undefined, {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(new Date(isoUtc));
-}
 
 function todayLocalDateInput(): string {
   const now = new Date();
@@ -57,7 +48,7 @@ export function BookingWidget() {
   useEffect(() => {
     getServices()
       .then(setServices)
-      .catch(() => setServicesError("Could not load services. Please try again shortly."));
+      .catch(() => setServicesError("Palveluita ei voitu ladata. Yritä hetken kuluttua uudelleen."));
   }, []);
 
   async function fetchSlots(serviceId: string, forDate: string) {
@@ -67,7 +58,7 @@ export function BookingWidget() {
       const result = await getAvailability(serviceId, forDate);
       setSlots(result);
     } catch {
-      setSlotsError("Could not load available slots. Please try again shortly.");
+      setSlotsError("Vapaita aikoja ei voitu ladata. Yritä hetken kuluttua uudelleen.");
     } finally {
       setSlotsLoading(false);
     }
@@ -98,16 +89,16 @@ export function BookingWidget() {
 
   function validateForm(): string | null {
     if (name.trim().length === 0) {
-      return "Name is required.";
+      return "Nimi on pakollinen.";
     }
     if (!EMAIL_PATTERN.test(email.trim())) {
-      return "Enter a valid email address.";
+      return "Anna kelvollinen sähköpostiosoite.";
     }
     // Mirrors the backend's actual rule (bookingSchema.ts): non-empty only,
     // no format check. Adding a stricter client-only pattern here would
     // reject input the backend accepts.
     if (phone.trim().length === 0) {
-      return "Phone is required.";
+      return "Puhelinnumero on pakollinen.";
     }
     return null;
   }
@@ -136,12 +127,12 @@ export function BookingWidget() {
       setStep("confirmation");
     } catch (error) {
       if (error instanceof ApiError && error.status === 409) {
-        setSlotTakenMessage("Sorry, that slot was just taken. Please pick another time.");
+        setSlotTakenMessage("Valitettavasti tuo aika varattiin juuri. Valitse toinen aika.");
         setSelectedSlot(null);
         setStep("select-slot");
         void fetchSlots(selectedService.id, date);
       } else {
-        setFormError("Something went wrong submitting your booking. Please try again.");
+        setFormError("Varauksen lähettämisessä tapahtui virhe. Yritä uudelleen.");
       }
     } finally {
       setSubmitting(false);
@@ -151,11 +142,11 @@ export function BookingWidget() {
   if (step === "confirmation" && confirmedBookingId) {
     return (
       <div className="page">
-        <h1>Request received</h1>
+        <h1>Pyyntö vastaanotettu</h1>
         <div className="card">
           <p data-testid="confirmation-pending">
-            Your booking request has been sent and is awaiting the masseur&rsquo;s confirmation.
-            You are not booked yet &mdash; you&rsquo;ll hear back once it&rsquo;s been reviewed.
+            Varauspyyntösi on lähetetty ja odottaa hierojan vahvistusta. Varaustasi ei ole vielä
+            vahvistettu &mdash; saat viestin, kun pyyntösi on käsitelty.
           </p>
         </div>
       </div>
@@ -164,12 +155,12 @@ export function BookingWidget() {
 
   return (
     <div className="page">
-      <h1>Book a session</h1>
+      <h1>Varaa aika</h1>
 
       {step === "select-service" && (
-        <section className="card" aria-label="Choose a service">
+        <section className="card" aria-label="Valitse palvelu">
           {servicesError && <p role="alert">{servicesError}</p>}
-          {!servicesError && services === null && <p className="loading-text">Loading services&hellip;</p>}
+          {!servicesError && services === null && <p className="loading-text">Ladataan palveluita&hellip;</p>}
           {services?.map((service) => (
             <button
               key={service.id}
@@ -185,15 +176,15 @@ export function BookingWidget() {
       )}
 
       {step === "select-slot" && selectedService && (
-        <section className="card" aria-label="Choose a date and time">
+        <section className="card" aria-label="Valitse päivä ja aika">
           <button type="button" className="btn btn-back" onClick={() => setStep("select-service")}>
-            &lsaquo; Back
+            &lsaquo; Takaisin
           </button>
           <p>{selectedService.name}</p>
           {slotTakenMessage && <p role="alert">{slotTakenMessage}</p>}
           <div className="field">
             <label>
-              Date
+              Päivämäärä
               <input
                 type="date"
                 value={date}
@@ -202,10 +193,10 @@ export function BookingWidget() {
               />
             </label>
           </div>
-          {slotsLoading && <p className="loading-text">Loading available times&hellip;</p>}
+          {slotsLoading && <p className="loading-text">Ladataan vapaita aikoja&hellip;</p>}
           {slotsError && <p role="alert">{slotsError}</p>}
           {!slotsLoading && !slotsError && slots?.length === 0 && (
-            <p>No available times on this date.</p>
+            <p>Ei vapaita aikoja tälle päivälle.</p>
           )}
           <div>
             {slots?.map((slot) => (
@@ -224,9 +215,9 @@ export function BookingWidget() {
       )}
 
       {step === "form" && selectedService && selectedSlot && (
-        <section className="card" aria-label="Your details">
+        <section className="card" aria-label="Omat tiedot">
           <button type="button" className="btn btn-back" onClick={() => setStep("select-slot")}>
-            &lsaquo; Back
+            &lsaquo; Takaisin
           </button>
           <p>
             {selectedService.name} &mdash; {formatSlotLocal(selectedSlot)}
@@ -235,7 +226,7 @@ export function BookingWidget() {
             {formError && <p role="alert">{formError}</p>}
             <div className="field">
               <label>
-                Name
+                Nimi
                 <input
                   type="text"
                   value={name}
@@ -246,7 +237,7 @@ export function BookingWidget() {
             </div>
             <div className="field">
               <label>
-                Email
+                Sähköposti
                 <input
                   type="email"
                   value={email}
@@ -257,7 +248,7 @@ export function BookingWidget() {
             </div>
             <div className="field">
               <label>
-                Phone
+                Puhelin
                 <input
                   type="tel"
                   value={phone}
@@ -267,7 +258,7 @@ export function BookingWidget() {
               </label>
             </div>
             <button type="submit" className="btn btn-primary" data-testid="submit-booking" disabled={submitting}>
-              {submitting ? "Submitting…" : "Request booking"}
+              {submitting ? "Lähetetään…" : "Lähetä varauspyyntö"}
             </button>
           </form>
         </section>

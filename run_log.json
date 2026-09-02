@@ -556,5 +556,20 @@
       "backend/test/integration/admin.bookingsList.test.ts",
       "backend/test/unit/emailTemplates.test.ts"
     ]
+  },
+  {
+    "id": "030-finnish-translation-customer-frontend",
+    "title": "Finnish translation: customer-facing frontend (BookingWidget, ManageBooking)",
+    "profile": "React Frontend",
+    "timestamp": "2026-09-02T17:32:35.000Z",
+    "dodStatus": "pass",
+    "filesChanged": [
+      "agents/tasks/030-finnish-translation-customer-frontend.json",
+      "frontend/src/lib/formatSlotLocal.ts",
+      "frontend/src/pages/BookingWidget.tsx",
+      "frontend/src/pages/ManageBooking.tsx",
+      "frontend/test/BookingWidget.test.tsx",
+      "frontend/test/ManageBooking.test.tsx"
+    ]
   }
 ]

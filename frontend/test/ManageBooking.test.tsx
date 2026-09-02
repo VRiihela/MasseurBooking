@@ -13,8 +13,8 @@ const PENDING_VIEW = {
   status: "pending",
   service_id: SERVICE_ID,
   service_name: "Deep Tissue Massage",
-  start_at_local: "Monday, August 10, 2026 at 9:00 AM GMT+3",
-  end_at_local: "Monday, August 10, 2026 at 10:00 AM GMT+3",
+  start_at_local: "maanantai 10. elokuuta 2026 klo 9.00",
+  end_at_local: "maanantai 10. elokuuta 2026 klo 10.00",
 };
 
 const CANCELLED_VIEW = {
@@ -80,8 +80,10 @@ describe("ManageBooking", () => {
     render(<ManageBooking bookingId={BOOKING_ID} />);
 
     expect(await screen.findByText(/Deep Tissue Massage/)).toBeInTheDocument();
-    expect(screen.getByText("Status: pending")).toBeInTheDocument();
-    expect(screen.getByText(/9:00 AM GMT\+3 to Monday/)).toBeInTheDocument();
+    expect(screen.getByText("Tila: odottaa vahvistusta")).toBeInTheDocument();
+    // Confirms both start and end local times render, joined by the en-dash
+    // connector, rather than checking either field in isolation.
+    expect(screen.getByText(/klo 9\.00 – maanantai/)).toBeInTheDocument();
   });
 
   it("shows a generic not-found state, never mentioning the token, when the token is missing", async () => {
@@ -103,7 +105,7 @@ describe("ManageBooking", () => {
 
     const alert = await screen.findByRole("alert");
     expect(alert.textContent?.toLowerCase()).not.toContain("token");
-    expect(screen.getByRole("heading")).toHaveTextContent("Booking not found");
+    expect(screen.getByRole("heading")).toHaveTextContent("Varausta ei löytynyt");
   });
 
   it("renders read-only with no Cancel/Reschedule controls for a cancelled booking", async () => {
@@ -112,9 +114,9 @@ describe("ManageBooking", () => {
 
     render(<ManageBooking bookingId={BOOKING_ID} />);
 
-    await screen.findByText("Status: cancelled");
-    expect(screen.queryByRole("button", { name: "Cancel booking" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Reschedule" })).not.toBeInTheDocument();
+    await screen.findByText("Tila: peruttu");
+    expect(screen.queryByRole("button", { name: "Peru varaus" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Siirrä aikaa" })).not.toBeInTheDocument();
   });
 
   it("requires an explicit confirm step before calling POST /bookings/:id/cancel", async () => {
@@ -122,17 +124,17 @@ describe("ManageBooking", () => {
     const { fetchMock } = stubFetch();
 
     render(<ManageBooking bookingId={BOOKING_ID} />);
-    await screen.findByText("Status: pending");
+    await screen.findByText("Tila: odottaa vahvistusta");
 
-    fireEvent.click(screen.getByRole("button", { name: "Cancel booking" }));
+    fireEvent.click(screen.getByRole("button", { name: "Peru varaus" }));
     expect(fetchMock.mock.calls.some(([url]) => String(url).includes("/cancel"))).toBe(false);
 
-    fireEvent.click(screen.getByRole("button", { name: "Confirm cancellation" }));
+    fireEvent.click(screen.getByRole("button", { name: "Vahvista peruutus" }));
 
     await waitFor(() => {
       expect(fetchMock.mock.calls.some(([url]) => String(url).includes("/cancel"))).toBe(true);
     });
-    await waitFor(() => expect(screen.getByText("Status: cancelled")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("Tila: peruttu")).toBeInTheDocument());
   });
 
   it("reschedules by POSTing the exact ISO string returned by GET /availability", async () => {
@@ -146,11 +148,11 @@ describe("ManageBooking", () => {
     });
 
     render(<ManageBooking bookingId={BOOKING_ID} />);
-    await screen.findByText("Status: pending");
+    await screen.findByText("Tila: odottaa vahvistusta");
 
-    fireEvent.click(screen.getByRole("button", { name: "Reschedule" }));
+    fireEvent.click(screen.getByRole("button", { name: "Siirrä aikaa" }));
     fireEvent.click(await screen.findByTestId(`slot-option-${SLOT}`));
-    fireEvent.click(screen.getByRole("button", { name: "Confirm reschedule" }));
+    fireEvent.click(screen.getByRole("button", { name: "Vahvista uusi aika" }));
 
     await waitFor(() => {
       expect(rescheduleBody).toEqual({ newStartAt: SLOT });
@@ -165,19 +167,19 @@ describe("ManageBooking", () => {
     });
 
     render(<ManageBooking bookingId={BOOKING_ID} />);
-    await screen.findByText("Status: pending");
+    await screen.findByText("Tila: odottaa vahvistusta");
     const viewCallsBeforeReschedule = fetchMock.mock.calls.filter(([url]) =>
       String(url).includes(`/bookings/${BOOKING_ID}?`),
     ).length;
 
-    fireEvent.click(screen.getByRole("button", { name: "Reschedule" }));
+    fireEvent.click(screen.getByRole("button", { name: "Siirrä aikaa" }));
     fireEvent.click(await screen.findByTestId(`slot-option-${SLOT}`));
-    fireEvent.click(screen.getByRole("button", { name: "Confirm reschedule" }));
+    fireEvent.click(screen.getByRole("button", { name: "Vahvista uusi aika" }));
 
     const success = await screen.findByTestId("reschedule-success");
-    expect(success).toHaveTextContent(/confirmation email/i);
-    expect(screen.queryByText("Status: cancelled")).not.toBeInTheDocument();
-    expect(screen.queryByText("Status: pending")).not.toBeInTheDocument();
+    expect(success).toHaveTextContent(/vahvistusviestin/i);
+    expect(screen.queryByText("Tila: peruttu")).not.toBeInTheDocument();
+    expect(screen.queryByText("Tila: odottaa vahvistusta")).not.toBeInTheDocument();
 
     const viewCallsAfterReschedule = fetchMock.mock.calls.filter(([url]) =>
       String(url).includes(`/bookings/${BOOKING_ID}?`),
@@ -190,12 +192,12 @@ describe("ManageBooking", () => {
     stubFetch();
 
     render(<ManageBooking bookingId={BOOKING_ID} />);
-    await screen.findByText("Status: pending");
+    await screen.findByText("Tila: odottaa vahvistusta");
 
-    fireEvent.click(screen.getByRole("button", { name: "Reschedule" }));
+    fireEvent.click(screen.getByRole("button", { name: "Siirrä aikaa" }));
     await screen.findByTestId(`slot-option-${SLOT}`);
 
-    expect(screen.queryByText(/choose a service/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/valitse palvelu/i)).not.toBeInTheDocument();
   });
 
   it("on a 409 slot-taken during reschedule, refreshes slots and shows an inline message", async () => {
@@ -215,14 +217,14 @@ describe("ManageBooking", () => {
     });
 
     render(<ManageBooking bookingId={BOOKING_ID} />);
-    await screen.findByText("Status: pending");
+    await screen.findByText("Tila: odottaa vahvistusta");
 
-    fireEvent.click(screen.getByRole("button", { name: "Reschedule" }));
+    fireEvent.click(screen.getByRole("button", { name: "Siirrä aikaa" }));
     fireEvent.click(await screen.findByTestId(`slot-option-${SLOT}`));
     const callsBeforeSubmit = availabilityCalls;
-    fireEvent.click(screen.getByRole("button", { name: "Confirm reschedule" }));
+    fireEvent.click(screen.getByRole("button", { name: "Vahvista uusi aika" }));
 
-    expect(await screen.findByRole("alert")).toHaveTextContent(/just taken/i);
+    expect(await screen.findByRole("alert")).toHaveTextContent(/varattiin juuri/i);
     await waitFor(() => expect(availabilityCalls).toBeGreaterThan(callsBeforeSubmit));
     expect(rescheduleAttempts).toBe(1);
   });
@@ -239,14 +241,14 @@ describe("ManageBooking", () => {
     });
 
     render(<ManageBooking bookingId={BOOKING_ID} />);
-    await screen.findByText("Status: pending");
+    await screen.findByText("Tila: odottaa vahvistusta");
 
-    fireEvent.click(screen.getByRole("button", { name: "Reschedule" }));
+    fireEvent.click(screen.getByRole("button", { name: "Siirrä aikaa" }));
     fireEvent.click(await screen.findByTestId(`slot-option-${SLOT}`));
-    fireEvent.click(screen.getByRole("button", { name: "Confirm reschedule" }));
+    fireEvent.click(screen.getByRole("button", { name: "Vahvista uusi aika" }));
 
-    await waitFor(() => expect(screen.getByText("Status: cancelled")).toBeInTheDocument());
-    expect(screen.queryByRole("button", { name: "Reschedule" })).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText("Tila: peruttu")).toBeInTheDocument());
+    expect(screen.queryByRole("button", { name: "Siirrä aikaa" })).not.toBeInTheDocument();
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 

@@ -6,7 +6,8 @@ import {
   getBookingForCustomer,
   rescheduleBooking,
 } from "../api/client";
-import type { CustomerBookingView } from "../api/types";
+import type { AdminBookingStatus, CustomerBookingView } from "../api/types";
+import { formatSlotLocal } from "../lib/formatSlotLocal";
 
 type LoadState =
   | { kind: "loading" }
@@ -16,15 +17,11 @@ type LoadState =
 
 type ActionMode = "view" | "cancel-confirm" | "reschedule";
 
-function formatSlotLocal(isoUtc: string): string {
-  return new Intl.DateTimeFormat(undefined, {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(new Date(isoUtc));
-}
+const STATUS_LABELS_FI: Record<AdminBookingStatus, string> = {
+  pending: "odottaa vahvistusta",
+  confirmed: "vahvistettu",
+  cancelled: "peruttu",
+};
 
 function todayLocalDateInput(): string {
   const now = new Date();
@@ -75,7 +72,7 @@ export function ManageBooking({ bookingId }: Props) {
       const result = await getAvailability(serviceId, forDate);
       setSlots(result);
     } catch {
-      setSlotsError("Could not load available slots. Please try again shortly.");
+      setSlotsError("Vapaita aikoja ei voitu ladata. Yritä hetken kuluttua uudelleen.");
     } finally {
       setSlotsLoading(false);
     }
@@ -108,7 +105,7 @@ export function ManageBooking({ bookingId }: Props) {
       setLoadState({ kind: "loaded", view: { ...currentView, status: result.status } });
       setMode("view");
     } catch {
-      setActionError("Could not cancel this booking. Please try again.");
+      setActionError("Varausta ei voitu perua. Yritä uudelleen.");
     } finally {
       setSubmitting(false);
     }
@@ -141,7 +138,7 @@ export function ManageBooking({ bookingId }: Props) {
           if (freshView.status === "cancelled") {
             setMode("view");
           } else {
-            setSlotTakenMessage("Sorry, that slot was just taken. Please pick another time.");
+            setSlotTakenMessage("Valitettavasti tuo aika varattiin juuri. Valitse toinen aika.");
             setSelectedSlot(null);
             void fetchSlots(serviceId, date);
           }
@@ -149,7 +146,7 @@ export function ManageBooking({ bookingId }: Props) {
           setLoadState({ kind: "not-found" });
         }
       } else {
-        setActionError("Could not reschedule this booking. Please try again.");
+        setActionError("Varausta ei voitu siirtää. Yritä uudelleen.");
       }
     } finally {
       setSubmitting(false);
@@ -159,8 +156,8 @@ export function ManageBooking({ bookingId }: Props) {
   if (loadState.kind === "loading") {
     return (
       <div className="page">
-        <h1>Your booking</h1>
-        <p className="loading-text">Loading&hellip;</p>
+        <h1>Varauksesi</h1>
+        <p className="loading-text">Ladataan&hellip;</p>
       </div>
     );
   }
@@ -168,9 +165,9 @@ export function ManageBooking({ bookingId }: Props) {
   if (loadState.kind === "not-found") {
     return (
       <div className="page">
-        <h1>Booking not found</h1>
+        <h1>Varausta ei löytynyt</h1>
         <p role="alert">
-          We couldn&rsquo;t find this booking. Please use the link from your confirmation email.
+          Emme löytäneet tätä varausta. Käytä vahvistussähköpostissa ollutta linkkiä.
         </p>
       </div>
     );
@@ -179,11 +176,11 @@ export function ManageBooking({ bookingId }: Props) {
   if (loadState.kind === "rescheduled") {
     return (
       <div className="page">
-        <h1>Booking rescheduled</h1>
+        <h1>Varaus siirretty</h1>
         <div className="card">
           <p data-testid="reschedule-success">
-            Your booking has been moved to {formatSlotLocal(loadState.newStartAt)}. We&rsquo;ve sent
-            a new confirmation email with an updated link to manage this booking.
+            Varauksesi on siirretty ajankohtaan {formatSlotLocal(loadState.newStartAt)}. Lähetimme
+            uuden vahvistusviestin, jossa on päivitetty linkki varauksen hallintaan.
           </p>
         </div>
       </div>
@@ -195,40 +192,40 @@ export function ManageBooking({ bookingId }: Props) {
 
   return (
     <div className="page">
-      <h1>Your booking</h1>
+      <h1>Varauksesi</h1>
       <div className="card">
         <p>
-          {view.service_name} &mdash; {view.start_at_local} to {view.end_at_local}
+          {view.service_name} &mdash; {view.start_at_local} &ndash; {view.end_at_local}
         </p>
-        <p>Status: {view.status}</p>
+        <p>Tila: {STATUS_LABELS_FI[view.status]}</p>
 
         {actionError && <p role="alert">{actionError}</p>}
 
         {isModifiable && mode === "view" && (
-          <section aria-label="Manage this booking">
+          <section aria-label="Hallinnoi varausta">
             <button type="button" className="btn btn-primary" onClick={() => handleStartReschedule(view.service_id)}>
-              Reschedule
+              Siirrä aikaa
             </button>
             <button type="button" className="btn btn-secondary" onClick={() => setMode("cancel-confirm")}>
-              Cancel booking
+              Peru varaus
             </button>
           </section>
         )}
 
         {isModifiable && mode === "cancel-confirm" && (
-          <section aria-label="Confirm cancellation">
-            <p>Are you sure you want to cancel this booking? This cannot be undone.</p>
+          <section aria-label="Vahvista peruutus">
+            <p>Haluatko varmasti perua tämän varauksen? Tätä ei voi kumota.</p>
             <button type="button" className="btn btn-primary" disabled={submitting} onClick={() => void handleCancel()}>
-              {submitting ? "Cancelling…" : "Confirm cancellation"}
+              {submitting ? "Perutaan…" : "Vahvista peruutus"}
             </button>
             <button type="button" className="btn btn-secondary" onClick={() => setMode("view")}>
-              Never mind
+              Älä peru
             </button>
           </section>
         )}
 
         {isModifiable && mode === "reschedule" && (
-          <section aria-label="Reschedule this booking">
+          <section aria-label="Siirrä varausta">
             <button
               type="button"
               className="btn btn-back"
@@ -237,12 +234,12 @@ export function ManageBooking({ bookingId }: Props) {
                 setSlotTakenMessage(null);
               }}
             >
-              &lsaquo; Back
+              &lsaquo; Takaisin
             </button>
             {slotTakenMessage && <p role="alert">{slotTakenMessage}</p>}
             <div className="field">
               <label>
-                Date
+                Päivämäärä
                 <input
                   type="date"
                   value={date}
@@ -250,10 +247,10 @@ export function ManageBooking({ bookingId }: Props) {
                 />
               </label>
             </div>
-            {slotsLoading && <p className="loading-text">Loading available times&hellip;</p>}
+            {slotsLoading && <p className="loading-text">Ladataan vapaita aikoja&hellip;</p>}
             {slotsError && <p role="alert">{slotsError}</p>}
             {!slotsLoading && !slotsError && slots?.length === 0 && (
-              <p>No available times on this date.</p>
+              <p>Ei vapaita aikoja tälle päivälle.</p>
             )}
             <div>
               {slots?.map((slot) => (
@@ -271,17 +268,17 @@ export function ManageBooking({ bookingId }: Props) {
 
             {selectedSlot && (
               <div>
-                <p>Move this booking to {formatSlotLocal(selectedSlot)}?</p>
+                <p>Siirretäänkö varaus ajankohtaan {formatSlotLocal(selectedSlot)}?</p>
                 <button
                   type="button"
                   className="btn btn-primary"
                   disabled={submitting}
                   onClick={() => void handleConfirmReschedule(view.service_id)}
                 >
-                  {submitting ? "Rescheduling…" : "Confirm reschedule"}
+                  {submitting ? "Siirretään…" : "Vahvista uusi aika"}
                 </button>
                 <button type="button" className="btn btn-secondary" onClick={() => setSelectedSlot(null)}>
-                  Choose a different time
+                  Valitse toinen aika
                 </button>
               </div>
             )}

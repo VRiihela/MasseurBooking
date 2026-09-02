@@ -1,0 +1,23 @@
+{
+  "title": "Finnish translation: customer-facing frontend (BookingWidget, ManageBooking)",
+  "profile": "React Frontend",
+  "repo": "masseur-booking",
+  "tech": "React + TypeScript frontend only -- no new dependency (no i18n library, full replacement per established decision)",
+  "keyConstraints": "Full replacement to Finnish, no toggle -- consistent with task 029 (backend emails/date-formatting). Queue this task after task 029 lands, since ManageBooking.tsx displays start_at_local/end_at_local coming directly from the backend's formatLocalTime -- once that's Finnish, ManageBooking's date display is Finnish automatically with no change needed here for that specific field. However, BookingWidget.tsx's slot picker does its own CLIENT-SIDE date/time formatting (formatSlotLocal, working from raw ISO strings returned by GET /availability, which is never backend-formatted) -- this needs its own independent Finnish-locale fix, it will not inherit anything from task 029. All literal UI text in both files -- headings, button labels, form labels (Name/Email/Phone/Date/Reason), placeholder/helper text, loading states, error messages, the 'Request received' confirmation copy, status labels ('pending'/'confirmed'/'cancelled' wherever displayed as text) -- must be translated. Check whether AdminBooking/CustomerBookingView's raw 'status' enum values (pending/confirmed/cancelled) are ever rendered directly as English words in these two files (vs. always going through a translated label) -- if so, add a small status-to-Finnish-label mapping rather than leaking the raw enum string. Ville is a native Finnish speaker and should review the actual rendered copy during testing for naturalness, not just mechanical correctness.",
+  "description": "Translate all UI text in the customer-facing booking flow (BookingWidget.tsx: service selection, slot selection, booking form, confirmation) and the manage-booking page (ManageBooking.tsx: view/cancel/reschedule via magic link) to natural Finnish, and switch BookingWidget's own client-side slot-time formatting to Finnish locale/convention (24-hour time, day-first date order), matching the direction task 029 takes for the backend.",
+  "acceptanceCriteria": [
+    "All visible text in BookingWidget.tsx (all four steps: select-service, select-slot, form, confirmation) is in Finnish",
+    "All visible text in ManageBooking.tsx (loading, view, reschedule flow, error states) is in Finnish",
+    "BookingWidget's slot-time display (formatSlotLocal or equivalent) renders in Finnish locale/convention, independent of the backend change in task 029",
+    "Raw English status enum values ('pending'/'confirmed'/'cancelled') are never shown directly to the customer -- translated labels are used wherever status is displayed as text",
+    "Existing BookingWidget.test.tsx and ManageBooking.test.tsx assertions that query by specific English text are deliberately updated to the new Finnish text -- this will touch most of both test files, since RTL queries by visible text/label throughout this project; update with reasoning, don't just find-and-replace blindly without checking each assertion still tests the right thing",
+    "npm test, npm run build, npm run lint, and tsc --noEmit all pass in frontend/ (backend should be unaffected since no backend files change)"
+  ],
+  "relevantFilePaths": [
+    "frontend/src/pages/BookingWidget.tsx",
+    "frontend/src/pages/ManageBooking.tsx",
+    "frontend/test/BookingWidget.test.tsx",
+    "frontend/test/ManageBooking.test.tsx"
+  ],
+  "securityConsiderations": "None -- purely text/formatting change, no new data handling, no new API calls, no validation change."
+}

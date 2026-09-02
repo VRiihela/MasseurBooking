@@ -49,9 +49,9 @@ async function selectServiceAndSlot(slot = SLOT) {
 }
 
 function fillCustomerForm({ email = "jane@example.com" }: { email?: string } = {}) {
-  fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Jane Doe" } });
-  fireEvent.change(screen.getByLabelText("Email"), { target: { value: email } });
-  fireEvent.change(screen.getByLabelText("Phone"), { target: { value: "555-0100" } });
+  fireEvent.change(screen.getByLabelText("Nimi"), { target: { value: "Jane Doe" } });
+  fireEvent.change(screen.getByLabelText("Sähköposti"), { target: { value: email } });
+  fireEvent.change(screen.getByLabelText("Puhelin"), { target: { value: "555-0100" } });
 }
 
 afterEach(() => {
@@ -105,9 +105,14 @@ describe("BookingWidget", () => {
     fireEvent.click(screen.getByTestId("submit-booking"));
 
     const confirmation = await screen.findByTestId("confirmation-pending");
-    expect(confirmation.textContent).toMatch(/awaiting/i);
-    expect(confirmation.textContent).not.toMatch(/you.?re booked/i);
-    expect(confirmation.textContent?.toLowerCase()).not.toContain("confirmed");
+    // "odottaa" (awaiting) signals pending, not final; the message must
+    // explicitly say the booking is NOT yet confirmed ("ei ole vielä
+    // vahvistettu"), not just avoid the word "vahvistettu" outright -- Finnish
+    // has no separate word for "confirmation" (the process) vs "confirmed"
+    // (the status) the way the original English test's wording relied on.
+    expect(confirmation.textContent).toMatch(/odottaa/i);
+    expect(confirmation.textContent).toContain("ei ole vielä vahvistettu");
+    expect(confirmation.textContent).not.toMatch(/varauksesi on vahvistettu/i);
   });
 
   it("disables the submit button while the request is in flight", async () => {
@@ -150,7 +155,7 @@ describe("BookingWidget", () => {
     const callsBeforeSubmit = getAvailabilityCalls();
     fireEvent.click(screen.getByTestId("submit-booking"));
 
-    expect(await screen.findByRole("alert")).toHaveTextContent(/just taken/i);
+    expect(await screen.findByRole("alert")).toHaveTextContent(/varattiin juuri/i);
     await waitFor(() => expect(getAvailabilityCalls()).toBeGreaterThan(callsBeforeSubmit));
   });
 
@@ -162,7 +167,7 @@ describe("BookingWidget", () => {
     fillCustomerForm({ email: "not-an-email" });
     fireEvent.click(screen.getByTestId("submit-booking"));
 
-    expect(await screen.findByRole("alert")).toHaveTextContent(/valid email/i);
+    expect(await screen.findByRole("alert")).toHaveTextContent(/kelvollinen sähköpostiosoite/i);
     expect(fetchMock.mock.calls.some(([url]) => String(url).includes("/bookings"))).toBe(false);
   });
 
@@ -177,6 +182,6 @@ describe("BookingWidget", () => {
     const expected = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(
       today.getDate(),
     ).padStart(2, "0")}`;
-    expect(screen.getByLabelText("Date")).toHaveAttribute("min", expected);
+    expect(screen.getByLabelText("Päivämäärä")).toHaveAttribute("min", expected);
   });
 });
