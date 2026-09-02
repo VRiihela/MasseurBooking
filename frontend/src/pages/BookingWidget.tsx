@@ -178,7 +178,7 @@ export function BookingWidget() {
               data-testid={`service-option-${service.id}`}
               onClick={() => handleSelectService(service)}
             >
-              {service.name} &mdash; {service.duration_minutes} min &mdash; {service.price}
+              {service.name} &mdash; {service.duration_minutes} min &mdash; {service.price} €
             </button>
           ))}
         </section>
