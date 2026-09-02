@@ -1,6 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { DateTime } from "luxon";
-import { Calendar, luxonLocalizer, Views, type SlotInfo, type View } from "react-big-calendar";
+import {
+  Calendar,
+  luxonLocalizer,
+  Views,
+  type DateHeaderProps,
+  type SlotInfo,
+  type View,
+} from "react-big-calendar";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import "./AdminCalendar.css";
 import {
@@ -23,7 +30,7 @@ import type { AdminBooking, AvailabilityException } from "../api/types";
 // own timezone -- but it is a deliberate v1 simplification, not a guarantee,
 // and would need revisiting if this ever supported a masseur travelling
 // across timezones or multiple providers.
-const localizer = luxonLocalizer(DateTime);
+const localizer = luxonLocalizer(DateTime, { firstDayOfWeek: 1 });
 
 const CALENDAR_VIEWS: View[] = [Views.MONTH, Views.WEEK, Views.DAY];
 
@@ -149,6 +156,49 @@ export async function runBatchBlock(
   }
 
   return { result: { newlyBlocked, alreadyBlocked, failed }, created, unauthorized: false };
+}
+
+// react-big-calendar's Month view rows now start on Monday (localizer's
+// firstDayOfWeek: 1, set above), which matches Luxon's Monday-anchored ISO
+// week -- so unlike the earlier Sunday-start layout, all 7 days in a row
+// share one ISO week number and it can be read directly from the row's
+// leading cell, with no Sunday/Monday split needed.
+export function isoWeekNumberForRow(rowStartMonday: Date): number {
+  return DateTime.fromJSDate(rowStartMonday).weekNumber;
+}
+
+// Reproduces react-big-calendar's default DateHeader.js rendering exactly
+// (a drilldown button when a drilldownView is set, otherwise a plain span)
+// so the existing click-a-date-number-to-jump-to-Day-view behavior is
+// unchanged, then adds a sibling week-number control -- placed before the
+// date number, reading left-to-right as "Wk N  <date>" -- on each row's
+// leading (Monday) cell only, matching row.getDay() === 1.
+function makeDateHeaderComponent(onJumpToWeek: (weekStart: Date) => void) {
+  function CalendarDateHeader({ label, date, drilldownView, onDrillDown }: DateHeaderProps) {
+    const isRowStart = date.getDay() === 1;
+    return (
+      <>
+        {isRowStart && (
+          <button
+            type="button"
+            className="admin-calendar-week-number"
+            aria-label={`Week ${isoWeekNumberForRow(date)}`}
+            onClick={() => onJumpToWeek(date)}
+          >
+            Wk {isoWeekNumberForRow(date)}
+          </button>
+        )}
+        {drilldownView ? (
+          <button type="button" className="rbc-button-link" onClick={onDrillDown}>
+            {label}
+          </button>
+        ) : (
+          <span>{label}</span>
+        )}
+      </>
+    );
+  }
+  return CalendarDateHeader;
 }
 
 function dateAtLocalTime(year: number, month: number, day: number, time: string): Date {
@@ -455,6 +505,15 @@ export function AdminCalendar({ onSessionEnded }: Props) {
 
   const selectedExceptionEvent = selectedException ? toExceptionEvent(selectedException) : null;
 
+  const dateHeaderComponent = useMemo(
+    () =>
+      makeDateHeaderComponent((weekStart) => {
+        setDate(weekStart);
+        setView(Views.WEEK);
+      }),
+    [setDate, setView],
+  );
+
   return (
     <div className="admin-calendar">
       <section aria-label="Calendar mode">
@@ -492,6 +551,7 @@ export function AdminCalendar({ onSessionEnded }: Props) {
             views={CALENDAR_VIEWS}
             startAccessor="start"
             endAccessor="end"
+            components={{ month: { dateHeader: dateHeaderComponent } }}
             eventPropGetter={eventPropGetter}
             onSelectEvent={handleSelectEvent}
             selectable={mode === "manage"}

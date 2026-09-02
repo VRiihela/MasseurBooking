@@ -529,5 +529,18 @@
       "frontend/src/pages/AdminCalendar.tsx",
       "frontend/test/AdminCalendar.test.tsx"
     ]
+  },
+  {
+    "id": "028-calendar-week-number-jump",
+    "title": "Add clickable week numbers to the calendar's month view (jump to week view, matching existing date-to-day drill-down)",
+    "profile": "React Frontend",
+    "timestamp": "2026-09-02T00:00:00.000Z",
+    "dodStatus": "pass",
+    "filesChanged": [
+      "agents/tasks/028-calendar-week-number-jump.json",
+      "frontend/src/pages/AdminCalendar.tsx",
+      "frontend/src/pages/AdminCalendar.css",
+      "frontend/test/AdminCalendar.test.tsx"
+    ]
   }
 ]

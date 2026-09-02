@@ -80,6 +80,56 @@
   );
 }
 
+/* react-big-calendar's own .rbc-date-cell (a 7-way flex item, as narrow as
+   ~50px at a 390px viewport) lays its children out as right-aligned inline
+   content, which wraps rather than shrinks -- at that width, a pill wide
+   enough to read "Wk 36" plus the date number no longer both fit on the
+   library's default single inline line, and the pill silently drops to a
+   line of its own above the date. Turning the cell itself into a flex row
+   keeps both on one line by construction instead of relying on wrapping.
+   Base rule keeps the library's own right-alignment (flex-end) for the 6
+   columns that have only a date number -- unchanged from before this file
+   touched the cell's layout at all. */
+.admin-calendar-grid .rbc-date-cell {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 2px;
+}
+
+/* The one column per row (Monday) that also carries a week-number badge:
+   pin the badge to the cell's left edge and let the date number keep its
+   usual right-edge position -- real visual separation between the two,
+   rather than the two controls sitting adjacent with only a small gap.
+   Scoped with :has() rather than widening the base rule above, since
+   applying space-between to a single-child cell would collapse that lone
+   date number to the left edge instead of leaving it right-aligned like
+   every other column in the row. */
+.admin-calendar-grid .rbc-date-cell:has(.admin-calendar-week-number) {
+  justify-content: space-between;
+}
+
+/* Deliberately visually distinct from the plain rbc-button-link date number
+   it sits beside (pill shape, its own blue-tinted color, not just the
+   muted-gray/border palette used elsewhere in this file) so at a glance --
+   including at phone width, where the two controls share a narrow cell --
+   it doesn't read as part of the date. Sized to actually fit next to a
+   2-digit date number inside a ~50px cell at a 390px viewport (verified with
+   a real narrow-viewport screenshot, not just by eye). */
+.admin-calendar-week-number {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 3px;
+  border: none;
+  border-radius: 999px;
+  background-color: #dbeafe;
+  color: #1e40af;
+  font-size: 0.6rem;
+  font-weight: 600;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
 .admin-calendar-detail {
   margin-top: var(--space-3);
   padding: var(--space-3);

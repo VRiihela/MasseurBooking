@@ -4,6 +4,7 @@ import { Views } from "react-big-calendar";
 import {
   AdminCalendar,
   formatBatchResult,
+  isoWeekNumberForRow,
   planSlotBlock,
   runBatchBlock,
   toLocalDateString,
@@ -464,6 +465,88 @@ describe("AdminCalendar", () => {
     expect(dialog).toHaveTextContent("Status: confirmed");
     expect(dialog).not.toHaveTextContent("Booking already confirmed");
     expect(screen.queryByLabelText("Reason (optional)")).toBeNull();
+  });
+});
+
+describe("AdminCalendar Month-view week numbers", () => {
+  it("shows one distinct, ISO-week-numbered control per Month-view row", async () => {
+    localStorage.setItem(SESSION_TOKEN_STORAGE_KEY, TOKEN);
+    stubFetch([]);
+
+    render(<AdminCalendar onSessionEnded={() => {}} />);
+    await screen.findByTestId("admin-calendar-grid");
+    fireEvent.click(screen.getByRole("button", { name: "Month" }));
+
+    // August 2026 (NOW's month) renders as six Monday-start rows spanning
+    // Jul 27 -- Sep 6. Monday-start rows no longer straddle two ISO weeks
+    // (every day in a row now shares one ISO week number), so these come
+    // out as 31..36 directly from each row's leading (Monday) cell.
+    const weekButtons = screen.getAllByRole("button", { name: /^Week \d+$/ });
+    expect(weekButtons.map((button) => button.textContent)).toEqual([
+      "Wk 31",
+      "Wk 32",
+      "Wk 33",
+      "Wk 34",
+      "Wk 35",
+      "Wk 36",
+    ]);
+
+    // Each week button must be a separate, distinctly-labelled control from
+    // the date-number button in the same (Monday) cell, not confusable with
+    // it -- verified via distinct accessible names/roles rather than pixels,
+    // which also holds at a narrow (phone-width) viewport since it doesn't
+    // depend on layout. "10" (Aug 10, 2026) is the Monday that starts the
+    // "Week 33" row.
+    expect(screen.getByRole("button", { name: "10" })).not.toBe(screen.getByRole("button", { name: "Week 33" }));
+  });
+
+  it("clicking a week number switches to Week view navigated to that exact week", async () => {
+    localStorage.setItem(SESSION_TOKEN_STORAGE_KEY, TOKEN);
+    stubFetch([]);
+
+    const { container } = render(<AdminCalendar onSessionEnded={() => {}} />);
+    await screen.findByTestId("admin-calendar-grid");
+    fireEvent.click(screen.getByRole("button", { name: "Month" }));
+
+    // Week 31 (Jul 27 -- Aug 2) is a different week than NOW (Aug 10, week
+    // 33) falls in, so landing there confirms navigation actually happened
+    // rather than Week view merely already showing a plausible default.
+    fireEvent.click(screen.getByRole("button", { name: "Week 31" }));
+
+    expect(container.querySelector(".rbc-time-view")).not.toBeNull();
+    expect(container.querySelector(".rbc-month-view")).toBeNull();
+    expect(screen.getByRole("button", { name: "Week" })).toHaveClass("rbc-active");
+    expect(
+      Array.from(container.querySelectorAll(".rbc-header")).map((header) => header.textContent),
+    ).toEqual(["27 Mon", "28 Tue", "29 Wed", "30 Thu", "31 Fri", "01 Sat", "02 Sun"]);
+  });
+
+  it("leaves the existing date-number-to-Day-view behavior unchanged", async () => {
+    localStorage.setItem(SESSION_TOKEN_STORAGE_KEY, TOKEN);
+    stubFetch([]);
+
+    const { container } = render(<AdminCalendar onSessionEnded={() => {}} />);
+    await screen.findByTestId("admin-calendar-grid");
+    fireEvent.click(screen.getByRole("button", { name: "Month" }));
+
+    // "10" (Aug 10, 2026) rather than a day in the 27-31 range: those values
+    // appear twice in this grid (once as July's off-range padding, once as
+    // August's in-range date), which would make the button name ambiguous.
+    fireEvent.click(screen.getByRole("button", { name: "10" }));
+
+    expect(container.querySelector(".rbc-time-view")).not.toBeNull();
+    expect(container.querySelector(".rbc-month-view")).toBeNull();
+    expect(screen.getByRole("button", { name: "Day" })).toHaveClass("rbc-active");
+    expect(
+      Array.from(container.querySelectorAll(".rbc-header")).map((header) => header.textContent),
+    ).toEqual(["10 Mon"]);
+  });
+
+  it("computes the correct ISO week number for a row spanning a year boundary", () => {
+    // Dec 28, 2026 (Monday) starts a Month-view row running through Jan 3,
+    // 2027 -- ISO week 53 of 2026, not a reset to week 1 -- the classic
+    // year-boundary trap for hand-rolled week-number logic.
+    expect(isoWeekNumberForRow(new Date(2026, 11, 28))).toBe(53);
   });
 });
 
