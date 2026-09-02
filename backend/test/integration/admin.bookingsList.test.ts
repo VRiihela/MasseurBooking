@@ -127,8 +127,8 @@ describe("GET /admin/bookings", () => {
     const response = await request(app).get("/admin/bookings").set(nyAuthHeader);
 
     expect(response.status).toBe(200);
-    expect(response.body[0].start_at_local).toContain("9:00 AM");
-    expect(response.body[0].start_at_local).not.toContain("2:00 PM");
+    expect(response.body[0].start_at_local).toContain("klo 9.00");
+    expect(response.body[0].start_at_local).not.toContain("klo 14.00");
     // The raw fields are always UTC, regardless of provider timezone -- unlike
     // start_at_local/end_at_local, they must never shift with provider.timezone.
     expect(response.body[0].start_at).toBe(startAt);

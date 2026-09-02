@@ -542,5 +542,19 @@
       "frontend/src/pages/AdminCalendar.css",
       "frontend/test/AdminCalendar.test.tsx"
     ]
+  },
+  {
+    "id": "029-finnish-translation-backend",
+    "title": "Finnish translation: email templates and date/time formatting (backend)",
+    "profile": "Node/TypeScript Backend",
+    "timestamp": "2026-09-02T17:10:47.000Z",
+    "dodStatus": "pass",
+    "filesChanged": [
+      "agents/tasks/029-finnish-translation-backend.json",
+      "backend/src/services/emailTemplates.ts",
+      "backend/src/services/timeFormat.ts",
+      "backend/test/integration/admin.bookingsList.test.ts",
+      "backend/test/unit/emailTemplates.test.ts"
+    ]
   }
 ]

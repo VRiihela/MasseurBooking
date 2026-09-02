@@ -22,15 +22,15 @@ function renderRequestReceived(payload: BookingEmailPayload): EmailMessage {
   const name = sanitizeForSubject(payload.customerName);
   return {
     to: payload.customerEmail,
-    subject: `Your ${payload.serviceName} booking request has been received`,
-    body: `Hi ${name},
+    subject: `Varauspyyntösi palveluun ${payload.serviceName} on vastaanotettu`,
+    body: `Hei ${name},
 
-We've received your request for ${payload.serviceName} on ${payload.startAtLocal}.
-The masseur will confirm or decline it shortly -- you'll get another email as soon as they do.
+Olemme vastaanottaneet varauspyyntösi palveluun ${payload.serviceName} ajankohta: ${payload.startAtLocal}.
+Hieroja vahvistaa tai hylkää pyynnön pian -- saat siitä uuden sähköpostiviestin heti kun päätös on tehty.
 
-Manage your booking: ${payload.manageUrl}
+Hallinnoi varaustasi: ${payload.manageUrl}
 
-Booking reference: ${payload.bookingId}`,
+Varausnumero: ${payload.bookingId}`,
   };
 }
 
@@ -38,32 +38,32 @@ function renderConfirmed(payload: BookingEmailPayload): EmailMessage {
   const name = sanitizeForSubject(payload.customerName);
   return {
     to: payload.customerEmail,
-    subject: `Your ${payload.serviceName} booking is confirmed`,
-    body: `Hi ${name},
+    subject: `Varauksesi palveluun ${payload.serviceName} on vahvistettu`,
+    body: `Hei ${name},
 
-Good news -- your ${payload.serviceName} appointment on ${payload.startAtLocal} is confirmed.
+Hyviä uutisia -- varauksesi palveluun ${payload.serviceName} ajankohta: ${payload.startAtLocal} on vahvistettu.
 
-Manage your booking: ${payload.manageUrl}
+Hallinnoi varaustasi: ${payload.manageUrl}
 
-Booking reference: ${payload.bookingId}`,
+Varausnumero: ${payload.bookingId}`,
   };
 }
 
 function renderDeclined(payload: BookingEmailPayload): EmailMessage {
   const name = sanitizeForSubject(payload.customerName);
   const reasonLine = payload.cancellationReason
-    ? `\nReason: ${sanitizeForSubject(payload.cancellationReason)}\n`
+    ? `\nSyy: ${sanitizeForSubject(payload.cancellationReason)}\n`
     : "";
   return {
     to: payload.customerEmail,
-    subject: `Your ${payload.serviceName} booking request could not be accommodated`,
-    body: `Hi ${name},
+    subject: `Varauspyyntöäsi palveluun ${payload.serviceName} ei valitettavasti voitu toteuttaa`,
+    body: `Hei ${name},
 
-Unfortunately your request for ${payload.serviceName} on ${payload.startAtLocal} could not be accommodated.
+Valitettavasti pyyntöäsi palveluun ${payload.serviceName} ajankohta: ${payload.startAtLocal} ei voitu toteuttaa.
 ${reasonLine}
-Manage your booking: ${payload.manageUrl}
+Hallinnoi varaustasi: ${payload.manageUrl}
 
-Booking reference: ${payload.bookingId}`,
+Varausnumero: ${payload.bookingId}`,
   };
 }
 
@@ -71,59 +71,59 @@ function renderCancelledByCustomer(payload: BookingEmailPayload): EmailMessage {
   const name = sanitizeForSubject(payload.customerName);
   return {
     to: payload.customerEmail,
-    subject: `Your ${payload.serviceName} booking has been cancelled`,
-    body: `Hi ${name},
+    subject: `Varauksesi palveluun ${payload.serviceName} on peruttu`,
+    body: `Hei ${name},
 
-As requested, your ${payload.serviceName} booking on ${payload.startAtLocal} has been cancelled.
+Pyyntösi mukaisesti varauksesi palveluun ${payload.serviceName} ajankohta: ${payload.startAtLocal} on peruttu.
 
-Manage your booking: ${payload.manageUrl}
+Hallinnoi varaustasi: ${payload.manageUrl}
 
-Booking reference: ${payload.bookingId}`,
+Varausnumero: ${payload.bookingId}`,
   };
 }
 
 function renderCancelledByMasseur(payload: BookingEmailPayload): EmailMessage {
   const name = sanitizeForSubject(payload.customerName);
   const reasonLine = payload.cancellationReason
-    ? `\nReason: ${sanitizeForSubject(payload.cancellationReason)}\n`
+    ? `\nSyy: ${sanitizeForSubject(payload.cancellationReason)}\n`
     : "";
   return {
     to: payload.customerEmail,
-    subject: `Your ${payload.serviceName} appointment has been cancelled`,
-    body: `Hi ${name},
+    subject: `Aikasi palveluun ${payload.serviceName} on peruttu`,
+    body: `Hei ${name},
 
-We're sorry, but your confirmed ${payload.serviceName} appointment on ${payload.startAtLocal} has had to be cancelled.
+Valitettavasti vahvistettu varauksesi palveluun ${payload.serviceName} ajankohta: ${payload.startAtLocal} on jouduttu perumaan.
 ${reasonLine}
-Manage your booking: ${payload.manageUrl}
+Hallinnoi varaustasi: ${payload.manageUrl}
 
-Booking reference: ${payload.bookingId}`,
+Varausnumero: ${payload.bookingId}`,
   };
 }
 
 function renderMasseurBookingChangeNotice(payload: MasseurBookingChangeEmailPayload): EmailMessage {
   const reasonLine = payload.cancellationReason
-    ? `Reason: ${sanitizeForSubject(payload.cancellationReason)}\n`
+    ? `Syy: ${sanitizeForSubject(payload.cancellationReason)}\n`
     : "";
   return {
     to: payload.adminEmail,
-    subject: `Schedule change -- ${payload.serviceName} on ${payload.startAtLocal}`,
-    body: `A customer just changed a booking on your schedule.
+    subject: `Aikataulumuutos -- ${payload.serviceName} ajankohta: ${payload.startAtLocal}`,
+    body: `Asiakas muutti juuri varausta aikataulussasi.
 
-${payload.serviceName} on ${payload.startAtLocal} is no longer booked -- that slot is now free.
+${payload.serviceName} ajankohta: ${payload.startAtLocal} ei ole enää varattu -- kyseinen aika on nyt vapaa.
 ${reasonLine}
-Booking reference: ${payload.bookingId}`,
+Varausnumero: ${payload.bookingId}`,
   };
 }
 
 function renderMasseurLoginLink(payload: MasseurLoginLinkEmailPayload): EmailMessage {
   return {
     to: payload.adminEmail,
-    subject: "Your masseur admin login link",
-    body: `Use the link below to log in. It expires in 15 minutes and can only be used once.
+    subject: "Kirjautumislinkkisi hallintapaneeliin",
+    body: `Kirjaudu sisään alla olevasta linkistä. Linkki vanhenee 15 minuutissa ja sen voi käyttää vain kerran.
 
 ${payload.loginUrl}
 
-If you didn't request this, you can safely ignore this email.`,
+Jos et pyytänyt tätä, voit jättää tämän viestin huomiotta.`,
   };
 }
 
