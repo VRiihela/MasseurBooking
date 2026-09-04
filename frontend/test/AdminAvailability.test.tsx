@@ -80,13 +80,13 @@ describe("AdminAvailability", () => {
 
     const headings = screen.getAllByRole("heading", { level: 2 }).map((el) => el.textContent);
     expect(headings).toEqual([
-      "Monday",
-      "Tuesday",
-      "Wednesday",
-      "Thursday",
-      "Friday",
-      "Saturday",
-      "Sunday",
+      "Maanantai",
+      "Tiistai",
+      "Keskiviikko",
+      "Torstai",
+      "Perjantai",
+      "Lauantai",
+      "Sunnuntai",
     ]);
   });
 
@@ -105,7 +105,7 @@ describe("AdminAvailability", () => {
     expect(tuesday.getByTestId("rule-rule-3")).toHaveTextContent("10:00–19:00");
 
     const wednesday = within(screen.getByTestId("weekday-3"));
-    expect(wednesday.getByText("No hours set")).not.toBeNull();
+    expect(wednesday.getByText("Ei asetettuja aikoja")).not.toBeNull();
   });
 
   it("adds a new time range, appending ':00' for the backend's strict HH:MM:SS format", async () => {
@@ -126,9 +126,9 @@ describe("AdminAvailability", () => {
     await screen.findByTestId("weekday-1");
 
     const monday = within(screen.getByTestId("weekday-1"));
-    fireEvent.change(monday.getByLabelText("Start time"), { target: { value: "09:00" } });
-    fireEvent.change(monday.getByLabelText("End time"), { target: { value: "17:00" } });
-    fireEvent.click(monday.getByRole("button", { name: "Add time range" }));
+    fireEvent.change(monday.getByLabelText("Alkamisaika"), { target: { value: "09:00" } });
+    fireEvent.change(monday.getByLabelText("Päättymisaika"), { target: { value: "17:00" } });
+    fireEvent.click(monday.getByRole("button", { name: "Lisää aikaväli" }));
 
     await waitFor(() => {
       expect(monday.getByTestId("rule-new-rule")).toHaveTextContent("09:00–17:00");
@@ -144,11 +144,11 @@ describe("AdminAvailability", () => {
     await screen.findByTestId("weekday-1");
 
     const monday = within(screen.getByTestId("weekday-1"));
-    fireEvent.change(monday.getByLabelText("Start time"), { target: { value: "17:00" } });
-    fireEvent.change(monday.getByLabelText("End time"), { target: { value: "09:00" } });
-    fireEvent.click(monday.getByRole("button", { name: "Add time range" }));
+    fireEvent.change(monday.getByLabelText("Alkamisaika"), { target: { value: "17:00" } });
+    fireEvent.change(monday.getByLabelText("Päättymisaika"), { target: { value: "09:00" } });
+    fireEvent.click(monday.getByRole("button", { name: "Lisää aikaväli" }));
 
-    expect(await monday.findByRole("alert")).toHaveTextContent("End time must be after start time.");
+    expect(await monday.findByRole("alert")).toHaveTextContent("Päättymisajan on oltava alkamisajan jälkeen.");
     expect(fetchMock.mock.calls.some(([url, init]) => (init as RequestInit)?.method === "POST")).toBe(
       false,
     );
@@ -165,9 +165,9 @@ describe("AdminAvailability", () => {
     await screen.findByTestId("weekday-1");
 
     const monday = within(screen.getByTestId("weekday-1"));
-    fireEvent.change(monday.getByLabelText("Start time"), { target: { value: "09:00" } });
-    fireEvent.change(monday.getByLabelText("End time"), { target: { value: "17:00" } });
-    fireEvent.click(monday.getByRole("button", { name: "Add time range" }));
+    fireEvent.change(monday.getByLabelText("Alkamisaika"), { target: { value: "09:00" } });
+    fireEvent.change(monday.getByLabelText("Päättymisaika"), { target: { value: "17:00" } });
+    fireEvent.click(monday.getByRole("button", { name: "Lisää aikaväli" }));
 
     expect(await monday.findByRole("alert")).toHaveTextContent("end_time must be after start_time");
   });
@@ -179,7 +179,7 @@ describe("AdminAvailability", () => {
     render(<AdminAvailability onSessionEnded={() => {}} />);
     await screen.findByTestId("rule-rule-1");
 
-    fireEvent.click(screen.getByRole("button", { name: "Delete" }));
+    fireEvent.click(screen.getByRole("button", { name: "Poista" }));
 
     await waitFor(() => {
       expect(screen.queryByTestId("rule-rule-1")).toBeNull();
@@ -202,7 +202,7 @@ describe("AdminAvailability", () => {
     render(<AdminAvailability onSessionEnded={() => {}} />);
     await screen.findByTestId("rule-rule-1");
 
-    fireEvent.click(screen.getByRole("button", { name: "Delete" }));
+    fireEvent.click(screen.getByRole("button", { name: "Poista" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Availability rule not found");
     // The row stays -- the delete didn't actually succeed.

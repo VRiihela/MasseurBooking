@@ -60,8 +60,8 @@ describe("AdminLoginCallback", () => {
 
     render(<AdminLoginCallback />);
 
-    expect(await screen.findByRole("alert")).toHaveTextContent(/missing/i);
-    expect(screen.getByRole("link", { name: /request a new login link/i })).toHaveAttribute(
+    expect(await screen.findByRole("alert")).toHaveTextContent(/puuttuu/i);
+    expect(screen.getByRole("link", { name: /pyydä uusi kirjautumislinkki/i })).toHaveAttribute(
       "href",
       "/admin",
     );
@@ -77,7 +77,7 @@ describe("AdminLoginCallback", () => {
     render(<AdminLoginCallback />);
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Unauthorized");
-    expect(screen.getByRole("link", { name: /request a new login link/i })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: /pyydä uusi kirjautumislinkki/i })).toHaveAttribute(
       "href",
       "/admin",
     );

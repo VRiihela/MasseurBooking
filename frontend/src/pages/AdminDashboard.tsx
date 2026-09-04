@@ -9,6 +9,7 @@ import {
   logout,
 } from "../api/client";
 import type { AdminBooking, AdminBookingStatusFilter } from "../api/types";
+import { FILTER_LABELS_FI, STATUS_LABELS_FI } from "../lib/statusLabels";
 import { AdminAvailability } from "./AdminAvailability";
 import { AdminCalendar } from "./AdminCalendar";
 import { AdminServices } from "./AdminServices";
@@ -50,7 +51,7 @@ export function AdminDashboard({ onSessionEnded }: Props) {
           onSessionEnded();
           return;
         }
-        setListError("Could not load bookings. Please try again shortly.");
+        setListError("Varauksia ei voitu ladata. Yritä hetken kuluttua uudelleen.");
       });
 
     return () => {
@@ -74,7 +75,7 @@ export function AdminDashboard({ onSessionEnded }: Props) {
         onSessionEnded();
         return;
       }
-      setActionError("Could not confirm this booking. Please try again.");
+      setActionError("Varausta ei voitu vahvistaa. Yritä uudelleen.");
     }
   }
 
@@ -90,7 +91,7 @@ export function AdminDashboard({ onSessionEnded }: Props) {
         onSessionEnded();
         return;
       }
-      setActionError("Could not decline this booking. Please try again.");
+      setActionError("Varausta ei voitu hylätä. Yritä uudelleen.");
     }
   }
 
@@ -106,7 +107,7 @@ export function AdminDashboard({ onSessionEnded }: Props) {
         onSessionEnded();
         return;
       }
-      setActionError("Could not cancel this booking. Please try again.");
+      setActionError("Varausta ei voitu perua. Yritä uudelleen.");
     }
   }
 
@@ -124,19 +125,19 @@ export function AdminDashboard({ onSessionEnded }: Props) {
 
   return (
     <div className="page">
-      <h1>Bookings</h1>
+      <h1>Varaukset</h1>
       <button type="button" className="btn btn-back" onClick={() => void handleLogout()}>
-        Log out
+        Kirjaudu ulos
       </button>
 
-      <section aria-label="Switch view">
+      <section aria-label="Vaihda näkymää">
         <button
           type="button"
           className={`btn ${viewMode === "list" ? "btn-primary" : "btn-secondary"}`}
           aria-pressed={viewMode === "list"}
           onClick={() => setViewMode("list")}
         >
-          List
+          Lista
         </button>
         <button
           type="button"
@@ -144,7 +145,7 @@ export function AdminDashboard({ onSessionEnded }: Props) {
           aria-pressed={viewMode === "calendar"}
           onClick={() => setViewMode("calendar")}
         >
-          Calendar
+          Kalenteri
         </button>
         <button
           type="button"
@@ -152,7 +153,7 @@ export function AdminDashboard({ onSessionEnded }: Props) {
           aria-pressed={viewMode === "availability"}
           onClick={() => setViewMode("availability")}
         >
-          Availability
+          Saatavuus
         </button>
         <button
           type="button"
@@ -160,7 +161,7 @@ export function AdminDashboard({ onSessionEnded }: Props) {
           aria-pressed={viewMode === "services"}
           onClick={() => setViewMode("services")}
         >
-          Services
+          Palvelut
         </button>
       </section>
 
@@ -170,7 +171,7 @@ export function AdminDashboard({ onSessionEnded }: Props) {
 
       {viewMode === "list" && (
         <>
-          <section aria-label="Filter bookings">
+          <section aria-label="Suodata varauksia">
             {STATUS_FILTERS.map((filter) => (
               <button
                 key={filter}
@@ -179,38 +180,38 @@ export function AdminDashboard({ onSessionEnded }: Props) {
                 aria-pressed={statusFilter === filter}
                 onClick={() => setStatusFilter(filter)}
               >
-                {filter}
+                {FILTER_LABELS_FI[filter]}
               </button>
             ))}
           </section>
 
           {actionError && <p role="alert">{actionError}</p>}
           {listError && <p role="alert">{listError}</p>}
-          {!listError && bookings === null && <p className="loading-text">Loading bookings&hellip;</p>}
-          {bookings?.length === 0 && <p>No bookings in this view.</p>}
+          {!listError && bookings === null && <p className="loading-text">Ladataan varauksia&hellip;</p>}
+          {bookings?.length === 0 && <p>Ei varauksia tässä näkymässä.</p>}
 
           <ul>
             {bookings?.map((booking) => (
               <li key={booking.id} className="card" data-testid={`booking-${booking.id}`}>
                 <p>
-                  {booking.service_name} &mdash; {booking.start_at_local} to {booking.end_at_local}
+                  {booking.service_name} &mdash; {booking.start_at_local} &ndash; {booking.end_at_local}
                 </p>
                 <p>
                   {booking.customer_name} &mdash; {booking.customer_email} &mdash;{" "}
                   {booking.customer_phone}
                 </p>
-                <p>Status: {booking.status}</p>
+                <p>Tila: {STATUS_LABELS_FI[booking.status]}</p>
 
                 {booking.status === "pending" && (
                   <>
                     <button type="button" className="btn btn-primary" onClick={() => void handleConfirm(booking.id)}>
-                      Confirm
+                      Vahvista
                     </button>
                     {decliningId === booking.id ? (
                       <>
                         <div className="field">
                           <label>
-                            Reason (optional)
+                            Syy (valinnainen)
                             <textarea
                               value={declineReason}
                               maxLength={500}
@@ -219,7 +220,7 @@ export function AdminDashboard({ onSessionEnded }: Props) {
                           </label>
                         </div>
                         <button type="button" className="btn btn-primary" onClick={() => void handleDecline(booking.id)}>
-                          Confirm decline
+                          Vahvista hylkäys
                         </button>
                         <button
                           type="button"
@@ -229,7 +230,7 @@ export function AdminDashboard({ onSessionEnded }: Props) {
                             setDeclineReason("");
                           }}
                         >
-                          Cancel
+                          Peruuta
                         </button>
                       </>
                     ) : (
@@ -241,7 +242,7 @@ export function AdminDashboard({ onSessionEnded }: Props) {
                           setDeclineReason("");
                         }}
                       >
-                        Decline
+                        Hylkää
                       </button>
                     )}
                   </>
@@ -252,7 +253,7 @@ export function AdminDashboard({ onSessionEnded }: Props) {
                     <>
                       <div className="field">
                         <label>
-                          Reason (optional)
+                          Syy (valinnainen)
                           <textarea
                             value={cancelReason}
                             maxLength={500}
@@ -261,7 +262,7 @@ export function AdminDashboard({ onSessionEnded }: Props) {
                         </label>
                       </div>
                       <button type="button" className="btn btn-primary" onClick={() => void handleCancel(booking.id)}>
-                        Confirm cancel
+                        Vahvista peruutus
                       </button>
                       <button
                         type="button"
@@ -271,7 +272,7 @@ export function AdminDashboard({ onSessionEnded }: Props) {
                           setCancelReason("");
                         }}
                       >
-                        Never mind
+                        Älä peru
                       </button>
                     </>
                   ) : (
@@ -283,7 +284,7 @@ export function AdminDashboard({ onSessionEnded }: Props) {
                         setCancelReason("");
                       }}
                     >
-                      Cancel booking
+                      Peru varaus
                     </button>
                   ))}
               </li>

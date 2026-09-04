@@ -57,27 +57,27 @@ function serviceToFormState(service: AdminService): ServiceFormState {
 function validateServiceForm(form: ServiceFormState): ParsedServiceForm | { error: string } {
   const name = form.name.trim();
   if (!name) {
-    return { error: "Name is required." };
+    return { error: "Nimi on pakollinen." };
   }
 
   const price = Number(form.price);
   if (!Number.isFinite(price) || price <= 0) {
-    return { error: "Price must be a positive number." };
+    return { error: "Hinnan on oltava positiivinen luku." };
   }
 
   const duration_minutes = Number(form.duration_minutes);
   if (!Number.isInteger(duration_minutes) || duration_minutes <= 0) {
-    return { error: "Massage duration must be a positive whole number of minutes." };
+    return { error: "Hieronnan keston on oltava positiivinen kokonaisluku minuutteina." };
   }
 
   const buffer_before_minutes = Number(form.buffer_before_minutes);
   if (!Number.isInteger(buffer_before_minutes) || buffer_before_minutes < 0) {
-    return { error: "Buffer before must be zero or a positive whole number of minutes." };
+    return { error: "Puskurin ennen on oltava nolla tai positiivinen kokonaisluku minuutteina." };
   }
 
   const buffer_after_minutes = Number(form.buffer_after_minutes);
   if (!Number.isInteger(buffer_after_minutes) || buffer_after_minutes < 0) {
-    return { error: "Buffer after must be zero or a positive whole number of minutes." };
+    return { error: "Puskurin jälkeen on oltava nolla tai positiivinen kokonaisluku minuutteina." };
   }
 
   return { name, price, duration_minutes, buffer_before_minutes, buffer_after_minutes };
@@ -93,11 +93,11 @@ function ServiceFormFields({
   return (
     <>
       <label>
-        Name
+        Nimi
         <input type="text" value={form.name} onChange={(event) => onChange({ name: event.target.value })} />
       </label>
       <label>
-        Price
+        Hinta
         <input
           type="number"
           step="0.01"
@@ -106,7 +106,7 @@ function ServiceFormFields({
         />
       </label>
       <label>
-        Massage duration (minutes)
+        Hieronnan kesto (minuuttia)
         <input
           type="number"
           step="1"
@@ -115,7 +115,7 @@ function ServiceFormFields({
         />
       </label>
       <label>
-        Buffer before (minutes) -- preparation time reserved right before the massage, not bookable
+        Puskuri ennen (minuuttia) -- valmisteluaika juuri ennen hierontaa, ei varattavissa
         <input
           type="number"
           step="1"
@@ -124,7 +124,7 @@ function ServiceFormFields({
         />
       </label>
       <label>
-        Buffer after (minutes) -- cleanup time reserved right after the massage, not bookable
+        Puskuri jälkeen (minuuttia) -- siivousaika juuri hieronnan jälkeen, ei varattavissa
         <input
           type="number"
           step="1"
@@ -163,7 +163,7 @@ export function AdminServices({ onSessionEnded }: Props) {
           onSessionEnded();
           return;
         }
-        setLoadError("Could not load services. Please try again shortly.");
+        setLoadError("Palveluita ei voitu ladata. Yritä hetken kuluttua uudelleen.");
       });
 
     return () => {
@@ -189,7 +189,7 @@ export function AdminServices({ onSessionEnded }: Props) {
         return;
       }
       const message =
-        error instanceof ApiError ? error.message : "Could not create this service. Please try again.";
+        error instanceof ApiError ? error.message : "Palvelua ei voitu luoda. Yritä uudelleen.";
       setCreateForm((current) => ({ ...current, error: message }));
     }
   }
@@ -222,7 +222,7 @@ export function AdminServices({ onSessionEnded }: Props) {
         onSessionEnded();
         return;
       }
-      const message = error instanceof ApiError ? error.message : "Could not save changes. Please try again.";
+      const message = error instanceof ApiError ? error.message : "Muutoksia ei voitu tallentaa. Yritä uudelleen.";
       setEditForm((current) => ({ ...current, error: message }));
     }
   }
@@ -238,7 +238,7 @@ export function AdminServices({ onSessionEnded }: Props) {
         return;
       }
       setToggleError(
-        error instanceof ApiError ? error.message : "Could not update this service. Please try again.",
+        error instanceof ApiError ? error.message : "Palvelua ei voitu päivittää. Yritä uudelleen.",
       );
     }
   }
@@ -247,7 +247,7 @@ export function AdminServices({ onSessionEnded }: Props) {
     <div className="admin-services">
       {loadError && <p role="alert">{loadError}</p>}
       {toggleError && <p role="alert">{toggleError}</p>}
-      {!loadError && services === null && <p>Loading services&hellip;</p>}
+      {!loadError && services === null && <p>Ladataan palveluita&hellip;</p>}
 
       {services !== null && (
         <ul>
@@ -265,26 +265,26 @@ export function AdminServices({ onSessionEnded }: Props) {
                   />
                   {editForm.error && <p role="alert">{editForm.error}</p>}
                   <button type="button" className="btn btn-primary" onClick={() => void handleSaveEdit(service.id)}>
-                    Save
+                    Tallenna
                   </button>
                   <button type="button" className="btn btn-back" onClick={cancelEdit}>
-                    Cancel
+                    Peruuta
                   </button>
                 </>
               ) : (
                 <>
                   <p>
-                    {service.name} {!service.active && "(inactive)"}
+                    {service.name} {!service.active && "(ei käytössä)"}
                   </p>
-                  <p>Price: {service.price}</p>
-                  <p>Massage duration: {service.duration_minutes} minutes</p>
-                  <p>Buffer before: {service.buffer_before_minutes} minutes</p>
-                  <p>Buffer after: {service.buffer_after_minutes} minutes</p>
+                  <p>Hinta: {service.price}</p>
+                  <p>Hieronnan kesto: {service.duration_minutes} minuuttia</p>
+                  <p>Puskuri ennen: {service.buffer_before_minutes} minuuttia</p>
+                  <p>Puskuri jälkeen: {service.buffer_after_minutes} minuuttia</p>
                   <button type="button" className="btn btn-secondary" onClick={() => startEdit(service)}>
-                    Edit
+                    Muokkaa
                   </button>
                   <button type="button" className="btn btn-secondary" onClick={() => void handleToggleActive(service)}>
-                    {service.active ? "Deactivate" : "Activate"}
+                    {service.active ? "Poista käytöstä" : "Aktivoi"}
                   </button>
                 </>
               )}
@@ -293,15 +293,15 @@ export function AdminServices({ onSessionEnded }: Props) {
         </ul>
       )}
 
-      <section aria-label="Add a new service">
-        <h2>Add a new service</h2>
+      <section aria-label="Lisää uusi palvelu">
+        <h2>Lisää uusi palvelu</h2>
         <ServiceFormFields
           form={createForm}
           onChange={(patch) => setCreateForm((current) => ({ ...current, ...patch }))}
         />
         {createForm.error && <p role="alert">{createForm.error}</p>}
         <button type="button" className="btn btn-primary" onClick={() => void handleCreate()}>
-          Add service
+          Lisää palvelu
         </button>
       </section>
     </div>

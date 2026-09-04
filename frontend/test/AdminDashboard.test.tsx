@@ -12,8 +12,8 @@ const PENDING_BOOKING = {
   customer_name: "Jane Doe",
   customer_email: "jane@example.com",
   customer_phone: "555-0100",
-  start_at_local: "Monday, August 10, 2026 at 9:00 AM GMT+3",
-  end_at_local: "Monday, August 10, 2026 at 10:00 AM GMT+3",
+  start_at_local: "maanantai 10. elokuuta 2026 klo 9.00",
+  end_at_local: "maanantai 10. elokuuta 2026 klo 10.00",
   created_at: "2026-08-01T00:00:00.000Z",
 };
 
@@ -116,10 +116,10 @@ describe("AdminDashboard", () => {
     render(<AdminDashboard onSessionEnded={() => {}} />);
     await screen.findByTestId("booking-booking-1");
 
-    fireEvent.click(screen.getByRole("button", { name: "Confirm" }));
+    fireEvent.click(screen.getByRole("button", { name: "Vahvista" }));
 
     await waitFor(() => {
-      expect(screen.getByTestId("booking-booking-1")).toHaveTextContent("Status: confirmed");
+      expect(screen.getByTestId("booking-booking-1")).toHaveTextContent("Tila: vahvistettu");
     });
     const bookingsCalls = fetchMock.mock.calls.filter(([url]) =>
       (url as string).includes("/admin/bookings"),
@@ -145,11 +145,11 @@ describe("AdminDashboard", () => {
     render(<AdminDashboard onSessionEnded={() => {}} />);
     await screen.findByTestId("booking-booking-1");
 
-    fireEvent.click(screen.getByRole("button", { name: "Decline" }));
-    fireEvent.click(screen.getByRole("button", { name: "Confirm decline" }));
+    fireEvent.click(screen.getByRole("button", { name: "Hylkää" }));
+    fireEvent.click(screen.getByRole("button", { name: "Vahvista hylkäys" }));
 
     await waitFor(() => {
-      expect(screen.getByTestId("booking-booking-1")).toHaveTextContent("Status: cancelled");
+      expect(screen.getByTestId("booking-booking-1")).toHaveTextContent("Tila: peruttu");
     });
     expect(declineBody).toEqual({});
   });
@@ -172,11 +172,11 @@ describe("AdminDashboard", () => {
     render(<AdminDashboard onSessionEnded={() => {}} />);
     await screen.findByTestId("booking-booking-1");
 
-    fireEvent.click(screen.getByRole("button", { name: "Decline" }));
-    fireEvent.change(screen.getByLabelText("Reason (optional)"), {
+    fireEvent.click(screen.getByRole("button", { name: "Hylkää" }));
+    fireEvent.change(screen.getByLabelText("Syy (valinnainen)"), {
       target: { value: "  Not available  " },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Confirm decline" }));
+    fireEvent.click(screen.getByRole("button", { name: "Vahvista hylkäys" }));
 
     await waitFor(() => {
       expect(declineBody).toEqual({ reason: "Not available" });
@@ -204,12 +204,12 @@ describe("AdminDashboard", () => {
     await screen.findByTestId("booking-booking-1");
 
     const pendingItem = within(screen.getByTestId("booking-booking-1"));
-    expect(pendingItem.queryByRole("button", { name: "Cancel booking" })).toBeNull();
+    expect(pendingItem.queryByRole("button", { name: "Peru varaus" })).toBeNull();
 
     const confirmedItem = within(screen.getByTestId("booking-booking-2"));
-    expect(confirmedItem.getByRole("button", { name: "Cancel booking" })).not.toBeNull();
-    expect(confirmedItem.queryByRole("button", { name: "Confirm" })).toBeNull();
-    expect(confirmedItem.queryByRole("button", { name: "Decline" })).toBeNull();
+    expect(confirmedItem.getByRole("button", { name: "Peru varaus" })).not.toBeNull();
+    expect(confirmedItem.queryByRole("button", { name: "Vahvista" })).toBeNull();
+    expect(confirmedItem.queryByRole("button", { name: "Hylkää" })).toBeNull();
   });
 
   it("cancels a confirmed booking in place without refetching the list, using the two-step confirm", async () => {
@@ -219,12 +219,12 @@ describe("AdminDashboard", () => {
     render(<AdminDashboard onSessionEnded={() => {}} />);
     await screen.findByTestId("booking-booking-2");
 
-    fireEvent.click(screen.getByRole("button", { name: "Cancel booking" }));
-    expect(screen.getByRole("button", { name: "Never mind" })).not.toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "Confirm cancel" }));
+    fireEvent.click(screen.getByRole("button", { name: "Peru varaus" }));
+    expect(screen.getByRole("button", { name: "Älä peru" })).not.toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Vahvista peruutus" }));
 
     await waitFor(() => {
-      expect(screen.getByTestId("booking-booking-2")).toHaveTextContent("Status: cancelled");
+      expect(screen.getByTestId("booking-booking-2")).toHaveTextContent("Tila: peruttu");
     });
   });
 
@@ -235,10 +235,10 @@ describe("AdminDashboard", () => {
     render(<AdminDashboard onSessionEnded={() => {}} />);
     await screen.findByTestId("booking-booking-2");
 
-    fireEvent.click(screen.getByRole("button", { name: "Cancel booking" }));
-    fireEvent.click(screen.getByRole("button", { name: "Never mind" }));
+    fireEvent.click(screen.getByRole("button", { name: "Peru varaus" }));
+    fireEvent.click(screen.getByRole("button", { name: "Älä peru" }));
 
-    expect(screen.getByRole("button", { name: "Cancel booking" })).not.toBeNull();
+    expect(screen.getByRole("button", { name: "Peru varaus" })).not.toBeNull();
     expect(fetchMock.mock.calls.some(([url]) => (url as string).includes("/cancel"))).toBe(false);
   });
 
@@ -261,11 +261,11 @@ describe("AdminDashboard", () => {
     render(<AdminDashboard onSessionEnded={() => {}} />);
     await screen.findByTestId("booking-booking-2");
 
-    fireEvent.click(screen.getByRole("button", { name: "Cancel booking" }));
-    fireEvent.click(screen.getByRole("button", { name: "Confirm cancel" }));
+    fireEvent.click(screen.getByRole("button", { name: "Peru varaus" }));
+    fireEvent.click(screen.getByRole("button", { name: "Vahvista peruutus" }));
 
     await waitFor(() => {
-      expect(screen.getByTestId("booking-booking-2")).toHaveTextContent("Status: cancelled");
+      expect(screen.getByTestId("booking-booking-2")).toHaveTextContent("Tila: peruttu");
     });
     expect(cancelBody).toEqual({});
   });
@@ -289,11 +289,11 @@ describe("AdminDashboard", () => {
     render(<AdminDashboard onSessionEnded={() => {}} />);
     await screen.findByTestId("booking-booking-2");
 
-    fireEvent.click(screen.getByRole("button", { name: "Cancel booking" }));
-    fireEvent.change(screen.getByLabelText("Reason (optional)"), {
+    fireEvent.click(screen.getByRole("button", { name: "Peru varaus" }));
+    fireEvent.change(screen.getByLabelText("Syy (valinnainen)"), {
       target: { value: "  Something came up  " },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Confirm cancel" }));
+    fireEvent.click(screen.getByRole("button", { name: "Vahvista peruutus" }));
 
     await waitFor(() => {
       expect(cancelBody).toEqual({ reason: "Something came up" });
@@ -311,8 +311,8 @@ describe("AdminDashboard", () => {
     render(<AdminDashboard onSessionEnded={onSessionEnded} />);
     await screen.findByTestId("booking-booking-2");
 
-    fireEvent.click(screen.getByRole("button", { name: "Cancel booking" }));
-    fireEvent.click(screen.getByRole("button", { name: "Confirm cancel" }));
+    fireEvent.click(screen.getByRole("button", { name: "Peru varaus" }));
+    fireEvent.click(screen.getByRole("button", { name: "Vahvista peruutus" }));
 
     await waitFor(() => {
       expect(onSessionEnded).toHaveBeenCalled();
@@ -327,12 +327,12 @@ describe("AdminDashboard", () => {
     render(<AdminDashboard onSessionEnded={() => {}} />);
     await screen.findByTestId("booking-booking-1");
 
-    fireEvent.click(screen.getByRole("button", { name: "Calendar" }));
+    fireEvent.click(screen.getByRole("button", { name: "Kalenteri" }));
 
     expect(screen.queryByTestId("booking-booking-1")).toBeNull();
     await screen.findByTestId("admin-calendar-grid");
 
-    fireEvent.click(screen.getByRole("button", { name: "List" }));
+    fireEvent.click(screen.getByRole("button", { name: "Lista" }));
 
     await screen.findByTestId("booking-booking-1");
     expect(screen.queryByTestId("admin-calendar-grid")).toBeNull();
@@ -353,12 +353,12 @@ describe("AdminDashboard", () => {
     render(<AdminDashboard onSessionEnded={() => {}} />);
     await screen.findByTestId("booking-booking-1");
 
-    fireEvent.click(screen.getByRole("button", { name: "Availability" }));
+    fireEvent.click(screen.getByRole("button", { name: "Saatavuus" }));
 
     expect(screen.queryByTestId("booking-booking-1")).toBeNull();
     await screen.findByTestId("weekday-1");
 
-    fireEvent.click(screen.getByRole("button", { name: "List" }));
+    fireEvent.click(screen.getByRole("button", { name: "Lista" }));
 
     await screen.findByTestId("booking-booking-1");
     expect(screen.queryByTestId("weekday-1")).toBeNull();
@@ -371,15 +371,15 @@ describe("AdminDashboard", () => {
     render(<AdminDashboard onSessionEnded={() => {}} />);
     await screen.findByTestId("booking-booking-1");
 
-    fireEvent.click(screen.getByRole("button", { name: "Services" }));
+    fireEvent.click(screen.getByRole("button", { name: "Palvelut" }));
 
     expect(screen.queryByTestId("booking-booking-1")).toBeNull();
-    await screen.findByRole("region", { name: "Add a new service" });
+    await screen.findByRole("region", { name: "Lisää uusi palvelu" });
 
-    fireEvent.click(screen.getByRole("button", { name: "List" }));
+    fireEvent.click(screen.getByRole("button", { name: "Lista" }));
 
     await screen.findByTestId("booking-booking-1");
-    expect(screen.queryByRole("region", { name: "Add a new service" })).toBeNull();
+    expect(screen.queryByRole("region", { name: "Lisää uusi palvelu" })).toBeNull();
   });
 
   it("logs out, clears the token, and ends the session even if the logout call fails", async () => {
@@ -390,7 +390,7 @@ describe("AdminDashboard", () => {
     render(<AdminDashboard onSessionEnded={onSessionEnded} />);
     await screen.findByTestId("booking-booking-1");
 
-    fireEvent.click(screen.getByRole("button", { name: "Log out" }));
+    fireEvent.click(screen.getByRole("button", { name: "Kirjaudu ulos" }));
 
     await waitFor(() => {
       expect(onSessionEnded).toHaveBeenCalled();

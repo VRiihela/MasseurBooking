@@ -64,7 +64,7 @@ function stubFetch(routes: FetchRoutes = {}) {
 }
 
 function addServiceSection() {
-  return within(screen.getByRole("region", { name: "Add a new service" }));
+  return within(screen.getByRole("region", { name: "Lisää uusi palvelu" }));
 }
 
 afterEach(() => {
@@ -85,8 +85,8 @@ describe("AdminServices", () => {
     const inactiveRow = screen.getByTestId("service-svc-2");
     expect(activeRow.className).not.toContain("admin-service-inactive");
     expect(inactiveRow).toHaveClass("admin-service-inactive");
-    expect(inactiveRow).toHaveTextContent("(inactive)");
-    expect(activeRow).not.toHaveTextContent("(inactive)");
+    expect(inactiveRow).toHaveTextContent("(ei käytössä)");
+    expect(activeRow).not.toHaveTextContent("(ei käytössä)");
   });
 
   it("creates a new service, coercing string input values to real numbers before sending", async () => {
@@ -101,15 +101,15 @@ describe("AdminServices", () => {
     });
 
     render(<AdminServices onSessionEnded={() => {}} />);
-    await screen.findByRole("region", { name: "Add a new service" });
+    await screen.findByRole("region", { name: "Lisää uusi palvelu" });
 
     const form = addServiceSection();
-    fireEvent.change(form.getByLabelText("Name"), { target: { value: "Hot Stone Massage" } });
-    fireEvent.change(form.getByLabelText("Price"), { target: { value: "95.50" } });
-    fireEvent.change(form.getByLabelText("Massage duration (minutes)"), { target: { value: "90" } });
-    fireEvent.change(form.getByLabelText(/Buffer before/), { target: { value: "10" } });
-    fireEvent.change(form.getByLabelText(/Buffer after/), { target: { value: "15" } });
-    fireEvent.click(form.getByRole("button", { name: "Add service" }));
+    fireEvent.change(form.getByLabelText("Nimi"), { target: { value: "Hot Stone Massage" } });
+    fireEvent.change(form.getByLabelText("Hinta"), { target: { value: "95.50" } });
+    fireEvent.change(form.getByLabelText("Hieronnan kesto (minuuttia)"), { target: { value: "90" } });
+    fireEvent.change(form.getByLabelText(/Puskuri ennen/), { target: { value: "10" } });
+    fireEvent.change(form.getByLabelText(/Puskuri jälkeen/), { target: { value: "15" } });
+    fireEvent.click(form.getByRole("button", { name: "Lisää palvelu" }));
 
     await screen.findByTestId("service-new-service");
 
@@ -136,14 +136,14 @@ describe("AdminServices", () => {
     const fetchMock = stubFetch({ list: () => jsonResponse([]) });
 
     render(<AdminServices onSessionEnded={() => {}} />);
-    await screen.findByRole("region", { name: "Add a new service" });
+    await screen.findByRole("region", { name: "Lisää uusi palvelu" });
 
     const form = addServiceSection();
-    fireEvent.change(form.getByLabelText("Price"), { target: { value: "50" } });
-    fireEvent.change(form.getByLabelText("Massage duration (minutes)"), { target: { value: "30" } });
-    fireEvent.click(form.getByRole("button", { name: "Add service" }));
+    fireEvent.change(form.getByLabelText("Hinta"), { target: { value: "50" } });
+    fireEvent.change(form.getByLabelText("Hieronnan kesto (minuuttia)"), { target: { value: "30" } });
+    fireEvent.click(form.getByRole("button", { name: "Lisää palvelu" }));
 
-    expect(await form.findByRole("alert")).toHaveTextContent("Name is required.");
+    expect(await form.findByRole("alert")).toHaveTextContent("Nimi on pakollinen.");
     expect(fetchMock.mock.calls.some(([, init]) => (init as RequestInit)?.method === "POST")).toBe(false);
   });
 
@@ -152,15 +152,15 @@ describe("AdminServices", () => {
     const fetchMock = stubFetch({ list: () => jsonResponse([]) });
 
     render(<AdminServices onSessionEnded={() => {}} />);
-    await screen.findByRole("region", { name: "Add a new service" });
+    await screen.findByRole("region", { name: "Lisää uusi palvelu" });
 
     const form = addServiceSection();
-    fireEvent.change(form.getByLabelText("Name"), { target: { value: "Free Massage" } });
-    fireEvent.change(form.getByLabelText("Price"), { target: { value: "0" } });
-    fireEvent.change(form.getByLabelText("Massage duration (minutes)"), { target: { value: "30" } });
-    fireEvent.click(form.getByRole("button", { name: "Add service" }));
+    fireEvent.change(form.getByLabelText("Nimi"), { target: { value: "Free Massage" } });
+    fireEvent.change(form.getByLabelText("Hinta"), { target: { value: "0" } });
+    fireEvent.change(form.getByLabelText("Hieronnan kesto (minuuttia)"), { target: { value: "30" } });
+    fireEvent.click(form.getByRole("button", { name: "Lisää palvelu" }));
 
-    expect(await form.findByRole("alert")).toHaveTextContent("Price must be a positive number.");
+    expect(await form.findByRole("alert")).toHaveTextContent("Hinnan on oltava positiivinen luku.");
     expect(fetchMock.mock.calls.some(([, init]) => (init as RequestInit)?.method === "POST")).toBe(false);
   });
 
@@ -169,16 +169,16 @@ describe("AdminServices", () => {
     const fetchMock = stubFetch({ list: () => jsonResponse([]) });
 
     render(<AdminServices onSessionEnded={() => {}} />);
-    await screen.findByRole("region", { name: "Add a new service" });
+    await screen.findByRole("region", { name: "Lisää uusi palvelu" });
 
     const form = addServiceSection();
-    fireEvent.change(form.getByLabelText("Name"), { target: { value: "Half-Minute Massage" } });
-    fireEvent.change(form.getByLabelText("Price"), { target: { value: "50" } });
-    fireEvent.change(form.getByLabelText("Massage duration (minutes)"), { target: { value: "30.5" } });
-    fireEvent.click(form.getByRole("button", { name: "Add service" }));
+    fireEvent.change(form.getByLabelText("Nimi"), { target: { value: "Half-Minute Massage" } });
+    fireEvent.change(form.getByLabelText("Hinta"), { target: { value: "50" } });
+    fireEvent.change(form.getByLabelText("Hieronnan kesto (minuuttia)"), { target: { value: "30.5" } });
+    fireEvent.click(form.getByRole("button", { name: "Lisää palvelu" }));
 
     expect(await form.findByRole("alert")).toHaveTextContent(
-      "Massage duration must be a positive whole number of minutes.",
+      "Hieronnan keston on oltava positiivinen kokonaisluku minuutteina.",
     );
     expect(fetchMock.mock.calls.some(([, init]) => (init as RequestInit)?.method === "POST")).toBe(false);
   });
@@ -188,17 +188,17 @@ describe("AdminServices", () => {
     const fetchMock = stubFetch({ list: () => jsonResponse([]) });
 
     render(<AdminServices onSessionEnded={() => {}} />);
-    await screen.findByRole("region", { name: "Add a new service" });
+    await screen.findByRole("region", { name: "Lisää uusi palvelu" });
 
     const form = addServiceSection();
-    fireEvent.change(form.getByLabelText("Name"), { target: { value: "Rushed Massage" } });
-    fireEvent.change(form.getByLabelText("Price"), { target: { value: "50" } });
-    fireEvent.change(form.getByLabelText("Massage duration (minutes)"), { target: { value: "30" } });
-    fireEvent.change(form.getByLabelText(/Buffer before/), { target: { value: "-5" } });
-    fireEvent.click(form.getByRole("button", { name: "Add service" }));
+    fireEvent.change(form.getByLabelText("Nimi"), { target: { value: "Rushed Massage" } });
+    fireEvent.change(form.getByLabelText("Hinta"), { target: { value: "50" } });
+    fireEvent.change(form.getByLabelText("Hieronnan kesto (minuuttia)"), { target: { value: "30" } });
+    fireEvent.change(form.getByLabelText(/Puskuri ennen/), { target: { value: "-5" } });
+    fireEvent.click(form.getByRole("button", { name: "Lisää palvelu" }));
 
     expect(await form.findByRole("alert")).toHaveTextContent(
-      "Buffer before must be zero or a positive whole number of minutes.",
+      "Puskurin ennen on oltava nolla tai positiivinen kokonaisluku minuutteina.",
     );
     expect(fetchMock.mock.calls.some(([, init]) => (init as RequestInit)?.method === "POST")).toBe(false);
   });
@@ -211,13 +211,13 @@ describe("AdminServices", () => {
     });
 
     render(<AdminServices onSessionEnded={() => {}} />);
-    await screen.findByRole("region", { name: "Add a new service" });
+    await screen.findByRole("region", { name: "Lisää uusi palvelu" });
 
     const form = addServiceSection();
-    fireEvent.change(form.getByLabelText("Name"), { target: { value: "Hot Stone Massage" } });
-    fireEvent.change(form.getByLabelText("Price"), { target: { value: "50" } });
-    fireEvent.change(form.getByLabelText("Massage duration (minutes)"), { target: { value: "60" } });
-    fireEvent.click(form.getByRole("button", { name: "Add service" }));
+    fireEvent.change(form.getByLabelText("Nimi"), { target: { value: "Hot Stone Massage" } });
+    fireEvent.change(form.getByLabelText("Hinta"), { target: { value: "50" } });
+    fireEvent.change(form.getByLabelText("Hieronnan kesto (minuuttia)"), { target: { value: "60" } });
+    fireEvent.click(form.getByRole("button", { name: "Lisää palvelu" }));
 
     expect(await form.findByRole("alert")).toHaveTextContent("price must be a positive number");
   });
@@ -236,14 +236,14 @@ describe("AdminServices", () => {
     render(<AdminServices onSessionEnded={() => {}} />);
     const row = await screen.findByTestId("service-svc-1");
 
-    fireEvent.click(within(row).getByRole("button", { name: "Edit" }));
+    fireEvent.click(within(row).getByRole("button", { name: "Muokkaa" }));
 
-    expect(within(row).getByLabelText("Name")).toHaveValue("Deep Tissue Massage");
-    expect(within(row).getByLabelText("Price")).toHaveValue(80);
-    expect(within(row).getByLabelText("Massage duration (minutes)")).toHaveValue(60);
+    expect(within(row).getByLabelText("Nimi")).toHaveValue("Deep Tissue Massage");
+    expect(within(row).getByLabelText("Hinta")).toHaveValue(80);
+    expect(within(row).getByLabelText("Hieronnan kesto (minuuttia)")).toHaveValue(60);
 
-    fireEvent.change(within(row).getByLabelText("Price"), { target: { value: "100" } });
-    fireEvent.click(within(row).getByRole("button", { name: "Save" }));
+    fireEvent.change(within(row).getByLabelText("Hinta"), { target: { value: "100" } });
+    fireEvent.click(within(row).getByRole("button", { name: "Tallenna" }));
 
     await waitFor(() => {
       expect(within(screen.getByTestId("service-svc-1"))).toBeTruthy();
@@ -257,7 +257,7 @@ describe("AdminServices", () => {
     });
     const patchCalls = fetchMock.mock.calls.filter(([, init]) => (init as RequestInit)?.method === "PATCH");
     expect(patchCalls).toHaveLength(1);
-    expect(screen.getByTestId("service-svc-1")).toHaveTextContent("Price: 100");
+    expect(screen.getByTestId("service-svc-1")).toHaveTextContent("Hinta: 100");
   });
 
   it("cancels an edit without sending a request, leaving the original values", async () => {
@@ -267,11 +267,11 @@ describe("AdminServices", () => {
     render(<AdminServices onSessionEnded={() => {}} />);
     const row = await screen.findByTestId("service-svc-1");
 
-    fireEvent.click(within(row).getByRole("button", { name: "Edit" }));
-    fireEvent.change(within(row).getByLabelText("Price"), { target: { value: "999" } });
-    fireEvent.click(within(row).getByRole("button", { name: "Cancel" }));
+    fireEvent.click(within(row).getByRole("button", { name: "Muokkaa" }));
+    fireEvent.change(within(row).getByLabelText("Hinta"), { target: { value: "999" } });
+    fireEvent.click(within(row).getByRole("button", { name: "Peruuta" }));
 
-    expect(screen.getByTestId("service-svc-1")).toHaveTextContent("Price: 80");
+    expect(screen.getByTestId("service-svc-1")).toHaveTextContent("Hinta: 80");
     expect(fetchMock.mock.calls.some(([, init]) => (init as RequestInit)?.method === "PATCH")).toBe(false);
   });
 
@@ -285,13 +285,13 @@ describe("AdminServices", () => {
     render(<AdminServices onSessionEnded={() => {}} />);
     const row = await screen.findByTestId("service-svc-1");
 
-    fireEvent.click(within(row).getByRole("button", { name: "Edit" }));
-    fireEvent.click(within(row).getByRole("button", { name: "Save" }));
+    fireEvent.click(within(row).getByRole("button", { name: "Muokkaa" }));
+    fireEvent.click(within(row).getByRole("button", { name: "Tallenna" }));
 
     expect(await within(row).findByRole("alert")).toHaveTextContent(
       "duration_minutes must be a positive integer",
     );
-    expect(within(row).getByRole("button", { name: "Save" })).not.toBeNull();
+    expect(within(row).getByRole("button", { name: "Tallenna" })).not.toBeNull();
   });
 
   it("deactivates an active service immediately on a single tap", async () => {
@@ -308,13 +308,13 @@ describe("AdminServices", () => {
     render(<AdminServices onSessionEnded={() => {}} />);
     const row = await screen.findByTestId("service-svc-1");
 
-    fireEvent.click(within(row).getByRole("button", { name: "Deactivate" }));
+    fireEvent.click(within(row).getByRole("button", { name: "Poista käytöstä" }));
 
     await waitFor(() => {
       expect(screen.getByTestId("service-svc-1")).toHaveClass("admin-service-inactive");
     });
     expect(updateBody).toEqual({ active: false });
-    expect(within(screen.getByTestId("service-svc-1")).getByRole("button", { name: "Activate" })).not.toBeNull();
+    expect(within(screen.getByTestId("service-svc-1")).getByRole("button", { name: "Aktivoi" })).not.toBeNull();
   });
 
   it("reactivates an inactive service immediately on a single tap", async () => {
@@ -332,14 +332,14 @@ describe("AdminServices", () => {
     const row = await screen.findByTestId("service-svc-2");
     expect(row).toHaveClass("admin-service-inactive");
 
-    fireEvent.click(within(row).getByRole("button", { name: "Activate" }));
+    fireEvent.click(within(row).getByRole("button", { name: "Aktivoi" }));
 
     await waitFor(() => {
       expect(screen.getByTestId("service-svc-2")).not.toHaveClass("admin-service-inactive");
     });
     expect(updateBody).toEqual({ active: true });
-    expect(screen.getByTestId("service-svc-2")).not.toHaveTextContent("(inactive)");
-    expect(within(screen.getByTestId("service-svc-2")).getByRole("button", { name: "Deactivate" })).not.toBeNull();
+    expect(screen.getByTestId("service-svc-2")).not.toHaveTextContent("(ei käytössä)");
+    expect(within(screen.getByTestId("service-svc-2")).getByRole("button", { name: "Poista käytöstä" })).not.toBeNull();
   });
 
   it("surfaces a failed activate/deactivate as readable text", async () => {
@@ -352,7 +352,7 @@ describe("AdminServices", () => {
     render(<AdminServices onSessionEnded={() => {}} />);
     const row = await screen.findByTestId("service-svc-1");
 
-    fireEvent.click(within(row).getByRole("button", { name: "Deactivate" }));
+    fireEvent.click(within(row).getByRole("button", { name: "Poista käytöstä" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Service not found");
     expect(screen.getByTestId("service-svc-1")).not.toHaveClass("admin-service-inactive");

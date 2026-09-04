@@ -6,8 +6,9 @@ import {
   getBookingForCustomer,
   rescheduleBooking,
 } from "../api/client";
-import type { AdminBookingStatus, CustomerBookingView } from "../api/types";
+import type { CustomerBookingView } from "../api/types";
 import { formatSlotLocal } from "../lib/formatSlotLocal";
+import { STATUS_LABELS_FI } from "../lib/statusLabels";
 
 type LoadState =
   | { kind: "loading" }
@@ -16,12 +17,6 @@ type LoadState =
   | { kind: "rescheduled"; newStartAt: string };
 
 type ActionMode = "view" | "cancel-confirm" | "reschedule";
-
-const STATUS_LABELS_FI: Record<AdminBookingStatus, string> = {
-  pending: "odottaa vahvistusta",
-  confirmed: "vahvistettu",
-  cancelled: "peruttu",
-};
 
 function todayLocalDateInput(): string {
   const now = new Date();

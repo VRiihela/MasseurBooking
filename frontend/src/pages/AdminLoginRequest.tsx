@@ -22,7 +22,7 @@ export function AdminLoginRequest() {
     }
 
     if (!EMAIL_PATTERN.test(email.trim())) {
-      setFormError("Enter a valid email address.");
+      setFormError("Anna kelvollinen sähköpostiosoite.");
       return;
     }
     setFormError(null);
@@ -32,7 +32,7 @@ export function AdminLoginRequest() {
       const response = await requestLoginLink(email.trim());
       setResultMessage(response.message);
     } catch {
-      setFormError("Something went wrong requesting your login link. Please try again.");
+      setFormError("Kirjautumislinkin pyytämisessä tapahtui virhe. Yritä uudelleen.");
     } finally {
       setSubmitting(false);
     }
@@ -40,7 +40,7 @@ export function AdminLoginRequest() {
 
   return (
     <div className="page">
-      <h1>Masseur login</h1>
+      <h1>Hierojan kirjautuminen</h1>
       <div className="card">
         {resultMessage ? (
           <p role="status">{resultMessage}</p>
@@ -49,7 +49,7 @@ export function AdminLoginRequest() {
             {formError && <p role="alert">{formError}</p>}
             <div className="field">
               <label>
-                Email
+                Sähköposti
                 <input
                   type="email"
                   value={email}
@@ -59,7 +59,7 @@ export function AdminLoginRequest() {
               </label>
             </div>
             <button type="submit" className="btn btn-primary" data-testid="request-login-link" disabled={submitting}>
-              {submitting ? "Sending…" : "Send login link"}
+              {submitting ? "Lähetetään…" : "Lähetä kirjautumislinkki"}
             </button>
           </form>
         )}

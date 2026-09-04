@@ -4,7 +4,7 @@ import { ApiError, exchangeLoginToken, setStoredSessionToken } from "../api/clie
 type Status = "exchanging" | "missing-token" | "error";
 
 function RequestNewLinkLink() {
-  return <a href="/admin">Request a new login link</a>;
+  return <a href="/admin">Pyydä uusi kirjautumislinkki</a>;
 }
 
 export function AdminLoginCallback() {
@@ -25,7 +25,7 @@ export function AdminLoginCallback() {
       })
       .catch((error: unknown) => {
         setErrorMessage(
-          error instanceof ApiError ? error.message : "Could not verify your login link.",
+          error instanceof ApiError ? error.message : "Kirjautumislinkkiäsi ei voitu vahvistaa.",
         );
         setStatus("error");
       });
@@ -34,8 +34,8 @@ export function AdminLoginCallback() {
   if (status === "missing-token") {
     return (
       <div className="page">
-        <h1>Invalid login link</h1>
-        <p role="alert">This login link is missing its token.</p>
+        <h1>Virheellinen kirjautumislinkki</h1>
+        <p role="alert">Tästä kirjautumislinkistä puuttuu sen tunniste.</p>
         <RequestNewLinkLink />
       </div>
     );
@@ -44,7 +44,7 @@ export function AdminLoginCallback() {
   if (status === "error") {
     return (
       <div className="page">
-        <h1>Login link problem</h1>
+        <h1>Ongelma kirjautumislinkissä</h1>
         <p role="alert">{errorMessage}</p>
         <RequestNewLinkLink />
       </div>
@@ -53,7 +53,7 @@ export function AdminLoginCallback() {
 
   return (
     <div className="page">
-      <h1>Signing you in&hellip;</h1>
+      <h1>Kirjaudutaan sisään&hellip;</h1>
     </div>
   );
 }

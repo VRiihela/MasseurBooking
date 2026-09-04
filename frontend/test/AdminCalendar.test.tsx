@@ -170,14 +170,14 @@ describe("AdminCalendar", () => {
 
     expect(container.querySelector(".rbc-time-view")).not.toBeNull();
 
-    fireEvent.click(screen.getByRole("button", { name: "Month" }));
+    fireEvent.click(screen.getByRole("button", { name: "Kuukausi" }));
     expect(container.querySelector(".rbc-month-view")).not.toBeNull();
 
-    fireEvent.click(screen.getByRole("button", { name: "Week" }));
+    fireEvent.click(screen.getByRole("button", { name: "Viikko" }));
     expect(container.querySelector(".rbc-time-view")).not.toBeNull();
     expect(container.querySelector(".rbc-month-view")).toBeNull();
 
-    fireEvent.click(screen.getByRole("button", { name: "Day" }));
+    fireEvent.click(screen.getByRole("button", { name: "Päivä" }));
     expect(container.querySelector(".rbc-time-view")).not.toBeNull();
   });
 
@@ -222,23 +222,23 @@ describe("AdminCalendar", () => {
     await screen.findByTestId("admin-calendar-grid");
 
     fireEvent.click(screen.getByText("Deep Tissue Massage — Jane Doe"));
-    const pendingDialog = await screen.findByRole("dialog", { name: "Booking details" });
+    const pendingDialog = await screen.findByRole("dialog", { name: "Varauksen tiedot" });
     expect(pendingDialog).toHaveTextContent("Deep Tissue Massage");
     expect(pendingDialog).toHaveTextContent("Jane Doe");
     expect(pendingDialog).toHaveTextContent("jane@example.com");
-    expect(pendingDialog).toHaveTextContent("Status: pending");
-    expect(screen.getByRole("button", { name: "Confirm" })).not.toBeNull();
-    expect(screen.getByRole("button", { name: "Decline" })).not.toBeNull();
-    expect(screen.queryByRole("button", { name: "Cancel booking" })).toBeNull();
+    expect(pendingDialog).toHaveTextContent("Tila: odottaa vahvistusta");
+    expect(screen.getByRole("button", { name: "Vahvista" })).not.toBeNull();
+    expect(screen.getByRole("button", { name: "Hylkää" })).not.toBeNull();
+    expect(screen.queryByRole("button", { name: "Peru varaus" })).toBeNull();
 
-    fireEvent.click(screen.getByRole("button", { name: "Close" }));
+    fireEvent.click(screen.getByRole("button", { name: "Sulje" }));
 
     fireEvent.click(screen.getByText("Deep Tissue Massage — John Smith"));
-    const confirmedDialog = await screen.findByRole("dialog", { name: "Booking details" });
-    expect(confirmedDialog).toHaveTextContent("Status: confirmed");
-    expect(screen.getByRole("button", { name: "Cancel booking" })).not.toBeNull();
-    expect(screen.queryByRole("button", { name: "Confirm" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Decline" })).toBeNull();
+    const confirmedDialog = await screen.findByRole("dialog", { name: "Varauksen tiedot" });
+    expect(confirmedDialog).toHaveTextContent("Tila: vahvistettu");
+    expect(screen.getByRole("button", { name: "Peru varaus" })).not.toBeNull();
+    expect(screen.queryByRole("button", { name: "Vahvista" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Hylkää" })).toBeNull();
   });
 
   it("confirms a pending booking from the popup: updates the grid's event color and keeps the dialog open", async () => {
@@ -249,17 +249,17 @@ describe("AdminCalendar", () => {
     await screen.findByTestId("admin-calendar-grid");
 
     fireEvent.click(screen.getByText("Deep Tissue Massage — Jane Doe"));
-    await screen.findByRole("dialog", { name: "Booking details" });
+    await screen.findByRole("dialog", { name: "Varauksen tiedot" });
 
-    fireEvent.click(screen.getByRole("button", { name: "Confirm" }));
+    fireEvent.click(screen.getByRole("button", { name: "Vahvista" }));
 
     await waitFor(() => {
-      expect(screen.getByRole("dialog", { name: "Booking details" })).toHaveTextContent("Status: confirmed");
+      expect(screen.getByRole("dialog", { name: "Varauksen tiedot" })).toHaveTextContent("Tila: vahvistettu");
     });
     expect(screen.getByText("Deep Tissue Massage — Jane Doe").closest(".rbc-event")).toHaveClass(
       "admin-calendar-event-confirmed",
     );
-    expect(screen.getByRole("button", { name: "Cancel booking" })).not.toBeNull();
+    expect(screen.getByRole("button", { name: "Peru varaus" })).not.toBeNull();
 
     const confirmCall = calls.find((call) => call.url.includes("/confirm"));
     expect(confirmCall?.url).toContain(`/bookings/${PENDING_BOOKING.id}/confirm`);
@@ -273,16 +273,16 @@ describe("AdminCalendar", () => {
     await screen.findByTestId("admin-calendar-grid");
 
     fireEvent.click(screen.getByText("Deep Tissue Massage — Jane Doe"));
-    await screen.findByRole("dialog", { name: "Booking details" });
+    await screen.findByRole("dialog", { name: "Varauksen tiedot" });
 
-    fireEvent.click(screen.getByRole("button", { name: "Decline" }));
-    fireEvent.change(screen.getByLabelText("Reason (optional)"), {
+    fireEvent.click(screen.getByRole("button", { name: "Hylkää" }));
+    fireEvent.change(screen.getByLabelText("Syy (valinnainen)"), {
       target: { value: "Masseur unavailable" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Confirm decline" }));
+    fireEvent.click(screen.getByRole("button", { name: "Vahvista hylkäys" }));
 
     await waitFor(() => {
-      expect(screen.queryByRole("dialog", { name: "Booking details" })).toBeNull();
+      expect(screen.queryByRole("dialog", { name: "Varauksen tiedot" })).toBeNull();
     });
     expect(screen.queryByText("Deep Tissue Massage — Jane Doe")).toBeNull();
 
@@ -299,12 +299,12 @@ describe("AdminCalendar", () => {
     await screen.findByTestId("admin-calendar-grid");
 
     fireEvent.click(screen.getByText("Deep Tissue Massage — Jane Doe"));
-    await screen.findByRole("dialog", { name: "Booking details" });
-    fireEvent.click(screen.getByRole("button", { name: "Decline" }));
-    fireEvent.click(screen.getByRole("button", { name: "Confirm decline" }));
+    await screen.findByRole("dialog", { name: "Varauksen tiedot" });
+    fireEvent.click(screen.getByRole("button", { name: "Hylkää" }));
+    fireEvent.click(screen.getByRole("button", { name: "Vahvista hylkäys" }));
 
     await waitFor(() => {
-      expect(screen.queryByRole("dialog", { name: "Booking details" })).toBeNull();
+      expect(screen.queryByRole("dialog", { name: "Varauksen tiedot" })).toBeNull();
     });
 
     const declineCall = calls.find((call) => call.url.includes("/decline"));
@@ -319,16 +319,16 @@ describe("AdminCalendar", () => {
     await screen.findByTestId("admin-calendar-grid");
 
     fireEvent.click(screen.getByText("Deep Tissue Massage — John Smith"));
-    await screen.findByRole("dialog", { name: "Booking details" });
+    await screen.findByRole("dialog", { name: "Varauksen tiedot" });
 
-    fireEvent.click(screen.getByRole("button", { name: "Cancel booking" }));
-    fireEvent.change(screen.getByLabelText("Reason (optional)"), {
+    fireEvent.click(screen.getByRole("button", { name: "Peru varaus" }));
+    fireEvent.change(screen.getByLabelText("Syy (valinnainen)"), {
       target: { value: "Customer requested" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Confirm cancel" }));
+    fireEvent.click(screen.getByRole("button", { name: "Vahvista peruutus" }));
 
     await waitFor(() => {
-      expect(screen.queryByRole("dialog", { name: "Booking details" })).toBeNull();
+      expect(screen.queryByRole("dialog", { name: "Varauksen tiedot" })).toBeNull();
     });
     expect(screen.queryByText("Deep Tissue Massage — John Smith")).toBeNull();
 
@@ -355,14 +355,14 @@ describe("AdminCalendar", () => {
     await screen.findByTestId("admin-calendar-grid");
 
     fireEvent.click(screen.getByText("Deep Tissue Massage — Jane Doe"));
-    await screen.findByRole("dialog", { name: "Booking details" });
-    fireEvent.click(screen.getByRole("button", { name: "Confirm" }));
+    await screen.findByRole("dialog", { name: "Varauksen tiedot" });
+    fireEvent.click(screen.getByRole("button", { name: "Vahvista" }));
 
-    const dialog = await screen.findByRole("dialog", { name: "Booking details" });
+    const dialog = await screen.findByRole("dialog", { name: "Varauksen tiedot" });
     await waitFor(() => {
       expect(dialog).toHaveTextContent("Booking already confirmed");
     });
-    expect(dialog).toHaveTextContent("Status: pending");
+    expect(dialog).toHaveTextContent("Tila: odottaa vahvistusta");
     expect(screen.getByText("Deep Tissue Massage — Jane Doe").closest(".rbc-event")).toHaveClass(
       "admin-calendar-event-pending",
     );
@@ -387,8 +387,8 @@ describe("AdminCalendar", () => {
     await screen.findByTestId("admin-calendar-grid");
 
     fireEvent.click(screen.getByText("Deep Tissue Massage — Jane Doe"));
-    await screen.findByRole("dialog", { name: "Booking details" });
-    fireEvent.click(screen.getByRole("button", { name: "Confirm" }));
+    await screen.findByRole("dialog", { name: "Varauksen tiedot" });
+    fireEvent.click(screen.getByRole("button", { name: "Vahvista" }));
 
     await waitFor(() => {
       expect(onSessionEnded).toHaveBeenCalled();
@@ -403,20 +403,20 @@ describe("AdminCalendar", () => {
     render(<AdminCalendar onSessionEnded={() => {}} />);
     await screen.findByTestId("admin-calendar-grid");
 
-    fireEvent.click(screen.getByRole("button", { name: "Manage availability" }));
+    fireEvent.click(screen.getByRole("button", { name: "Hallinnoi saatavuutta" }));
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: "Manage availability" })).toHaveAttribute(
+      expect(screen.getByRole("button", { name: "Hallinnoi saatavuutta" })).toHaveAttribute(
         "aria-pressed",
         "true",
       );
     });
 
     fireEvent.click(screen.getByText("Deep Tissue Massage — Jane Doe"));
-    await screen.findByRole("dialog", { name: "Booking details" });
-    fireEvent.click(screen.getByRole("button", { name: "Confirm" }));
+    await screen.findByRole("dialog", { name: "Varauksen tiedot" });
+    fireEvent.click(screen.getByRole("button", { name: "Vahvista" }));
 
     await waitFor(() => {
-      expect(screen.getByRole("dialog", { name: "Booking details" })).toHaveTextContent("Status: confirmed");
+      expect(screen.getByRole("dialog", { name: "Varauksen tiedot" })).toHaveTextContent("Tila: vahvistettu");
     });
   });
 
@@ -451,20 +451,20 @@ describe("AdminCalendar", () => {
     await screen.findByTestId("admin-calendar-grid");
 
     fireEvent.click(screen.getByText("Deep Tissue Massage — Jane Doe"));
-    await screen.findByRole("dialog", { name: "Booking details" });
-    fireEvent.click(screen.getByRole("button", { name: "Decline" }));
-    fireEvent.click(screen.getByRole("button", { name: "Confirm" }));
+    await screen.findByRole("dialog", { name: "Varauksen tiedot" });
+    fireEvent.click(screen.getByRole("button", { name: "Hylkää" }));
+    fireEvent.click(screen.getByRole("button", { name: "Vahvista" }));
     await waitFor(() => {
-      expect(screen.getByRole("dialog", { name: "Booking details" })).toHaveTextContent(
+      expect(screen.getByRole("dialog", { name: "Varauksen tiedot" })).toHaveTextContent(
         "Booking already confirmed",
       );
     });
 
     fireEvent.click(screen.getByText("Deep Tissue Massage — John Smith"));
-    const dialog = await screen.findByRole("dialog", { name: "Booking details" });
-    expect(dialog).toHaveTextContent("Status: confirmed");
+    const dialog = await screen.findByRole("dialog", { name: "Varauksen tiedot" });
+    expect(dialog).toHaveTextContent("Tila: vahvistettu");
     expect(dialog).not.toHaveTextContent("Booking already confirmed");
-    expect(screen.queryByLabelText("Reason (optional)")).toBeNull();
+    expect(screen.queryByLabelText("Syy (valinnainen)")).toBeNull();
   });
 });
 
@@ -475,20 +475,20 @@ describe("AdminCalendar Month-view week numbers", () => {
 
     render(<AdminCalendar onSessionEnded={() => {}} />);
     await screen.findByTestId("admin-calendar-grid");
-    fireEvent.click(screen.getByRole("button", { name: "Month" }));
+    fireEvent.click(screen.getByRole("button", { name: "Kuukausi" }));
 
     // August 2026 (NOW's month) renders as six Monday-start rows spanning
     // Jul 27 -- Sep 6. Monday-start rows no longer straddle two ISO weeks
     // (every day in a row now shares one ISO week number), so these come
     // out as 31..36 directly from each row's leading (Monday) cell.
-    const weekButtons = screen.getAllByRole("button", { name: /^Week \d+$/ });
+    const weekButtons = screen.getAllByRole("button", { name: /^Viikko \d+$/ });
     expect(weekButtons.map((button) => button.textContent)).toEqual([
-      "Wk 31",
-      "Wk 32",
-      "Wk 33",
-      "Wk 34",
-      "Wk 35",
-      "Wk 36",
+      "Vk 31",
+      "Vk 32",
+      "Vk 33",
+      "Vk 34",
+      "Vk 35",
+      "Vk 36",
     ]);
 
     // Each week button must be a separate, distinctly-labelled control from
@@ -496,8 +496,8 @@ describe("AdminCalendar Month-view week numbers", () => {
     // it -- verified via distinct accessible names/roles rather than pixels,
     // which also holds at a narrow (phone-width) viewport since it doesn't
     // depend on layout. "10" (Aug 10, 2026) is the Monday that starts the
-    // "Week 33" row.
-    expect(screen.getByRole("button", { name: "10" })).not.toBe(screen.getByRole("button", { name: "Week 33" }));
+    // "Viikko 33" row.
+    expect(screen.getByRole("button", { name: "10" })).not.toBe(screen.getByRole("button", { name: "Viikko 33" }));
   });
 
   it("clicking a week number switches to Week view navigated to that exact week", async () => {
@@ -506,19 +506,23 @@ describe("AdminCalendar Month-view week numbers", () => {
 
     const { container } = render(<AdminCalendar onSessionEnded={() => {}} />);
     await screen.findByTestId("admin-calendar-grid");
-    fireEvent.click(screen.getByRole("button", { name: "Month" }));
+    fireEvent.click(screen.getByRole("button", { name: "Kuukausi" }));
 
     // Week 31 (Jul 27 -- Aug 2) is a different week than NOW (Aug 10, week
     // 33) falls in, so landing there confirms navigation actually happened
     // rather than Week view merely already showing a plausible default.
-    fireEvent.click(screen.getByRole("button", { name: "Week 31" }));
+    fireEvent.click(screen.getByRole("button", { name: "Viikko 31" }));
 
     expect(container.querySelector(".rbc-time-view")).not.toBeNull();
     expect(container.querySelector(".rbc-month-view")).toBeNull();
-    expect(screen.getByRole("button", { name: "Week" })).toHaveClass("rbc-active");
+    expect(screen.getByRole("button", { name: "Viikko" })).toHaveClass("rbc-active");
+    // Weekday abbreviations come from react-big-calendar's own dayFormat via
+    // the localizer's culture="fi" -- confirmed directly against Luxon that
+    // "fi" gives lowercase two-letter forms ("ma", "ti", ...), not a literal
+    // translation of "Mon"/"Tue".
     expect(
       Array.from(container.querySelectorAll(".rbc-header")).map((header) => header.textContent),
-    ).toEqual(["27 Mon", "28 Tue", "29 Wed", "30 Thu", "31 Fri", "01 Sat", "02 Sun"]);
+    ).toEqual(["27 ma", "28 ti", "29 ke", "30 to", "31 pe", "01 la", "02 su"]);
   });
 
   it("leaves the existing date-number-to-Day-view behavior unchanged", async () => {
@@ -527,7 +531,7 @@ describe("AdminCalendar Month-view week numbers", () => {
 
     const { container } = render(<AdminCalendar onSessionEnded={() => {}} />);
     await screen.findByTestId("admin-calendar-grid");
-    fireEvent.click(screen.getByRole("button", { name: "Month" }));
+    fireEvent.click(screen.getByRole("button", { name: "Kuukausi" }));
 
     // "10" (Aug 10, 2026) rather than a day in the 27-31 range: those values
     // appear twice in this grid (once as July's off-range padding, once as
@@ -536,10 +540,10 @@ describe("AdminCalendar Month-view week numbers", () => {
 
     expect(container.querySelector(".rbc-time-view")).not.toBeNull();
     expect(container.querySelector(".rbc-month-view")).toBeNull();
-    expect(screen.getByRole("button", { name: "Day" })).toHaveClass("rbc-active");
+    expect(screen.getByRole("button", { name: "Päivä" })).toHaveClass("rbc-active");
     expect(
       Array.from(container.querySelectorAll(".rbc-header")).map((header) => header.textContent),
-    ).toEqual(["10 Mon"]);
+    ).toEqual(["10 ma"]);
   });
 
   it("computes the correct ISO week number for a row spanning a year boundary", () => {
@@ -584,7 +588,7 @@ describe("planSlotBlock", () => {
     const end = new Date(2026, 7, 13, 1, 0, 0);
     const plan = planSlotBlock({ start, end, slots: [start] }, Views.WEEK);
     expect(plan).toEqual({
-      error: "Can't block a range that crosses midnight -- select a range within a single day.",
+      error: "Ei voi estää aikaväliä, joka ylittää vuorokauden vaihtumisen -- valitse aikaväli yhden päivän sisältä.",
     });
   });
 });
@@ -702,15 +706,19 @@ describe("formatBatchResult", () => {
       alreadyBlocked: ["6", "7"],
       failed: [],
     });
-    expect(message).toBe("Blocked 5 new days (2 were already blocked)");
+    expect(message).toBe("Estetty 5 uutta päivää (2 oli jo estetty)");
   });
 
-  it("uses singular wording for exactly one newly-blocked or already-blocked date", () => {
+  // Finnish grammar, not English: a count of exactly 1 takes the nominative
+  // singular ("uusi päivä"), while 0 -- like any count other than 1 -- takes
+  // the partitive singular ("uutta päivää"), so 0 does NOT read like the
+  // singular case the way English "0 new days" superficially might suggest.
+  it("uses the nominative singular only for exactly one newly-blocked or already-blocked date, partitive otherwise (including zero)", () => {
     expect(formatBatchResult({ newlyBlocked: ["1"], alreadyBlocked: [], failed: [] })).toBe(
-      "Blocked 1 new day",
+      "Estetty 1 uusi päivä",
     );
     expect(formatBatchResult({ newlyBlocked: [], alreadyBlocked: ["1"], failed: [] })).toBe(
-      "Blocked 0 new days (1 was already blocked)",
+      "Estetty 0 uutta päivää (1 oli jo estetty)",
     );
   });
 
@@ -721,7 +729,7 @@ describe("formatBatchResult", () => {
       failed: [{ date: "2026-08-18", message: "Too many requests. Please try again shortly." }],
     });
     expect(message).toBe(
-      "Blocked 1 new day. Failed: 2026-08-18 (Too many requests. Please try again shortly.)",
+      "Estetty 1 uusi päivä. Epäonnistui: 2026-08-18 (Too many requests. Please try again shortly.)",
     );
   });
 });
@@ -746,10 +754,10 @@ describe("AdminCalendar Manage-availability mode", () => {
       ).toBe(1);
     });
 
-    fireEvent.click(screen.getByRole("button", { name: "Manage availability" }));
+    fireEvent.click(screen.getByRole("button", { name: "Hallinnoi saatavuutta" }));
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: "Manage availability" })).toHaveAttribute(
+      expect(screen.getByRole("button", { name: "Hallinnoi saatavuutta" })).toHaveAttribute(
         "aria-pressed",
         "true",
       );
@@ -769,7 +777,7 @@ describe("AdminCalendar Manage-availability mode", () => {
     render(<AdminCalendar onSessionEnded={() => {}} />);
     await screen.findByTestId("admin-calendar-grid");
 
-    const blockedEvent = await screen.findByText("Blocked");
+    const blockedEvent = await screen.findByText("Estetty");
     expect(blockedEvent.closest(".rbc-event")).toHaveClass("admin-calendar-event-blocked");
   });
 
@@ -780,14 +788,14 @@ describe("AdminCalendar Manage-availability mode", () => {
     render(<AdminCalendar onSessionEnded={() => {}} />);
     await screen.findByTestId("admin-calendar-grid");
 
-    const blockedEvent = await screen.findByText("Blocked");
+    const blockedEvent = await screen.findByText("Estetty");
     fireEvent.click(blockedEvent);
 
-    await screen.findByRole("dialog", { name: "Blocked time details" });
+    await screen.findByRole("dialog", { name: "Estetyn ajan tiedot" });
 
     // Still on the grid -- View mode must not delete it. Two matches now:
     // the original grid event plus the read-only detail's own heading.
-    expect(screen.getAllByText("Blocked")).toHaveLength(2);
+    expect(screen.getAllByText("Estetty")).toHaveLength(2);
 
     const deleteCalls = fetchMock.mock.calls.filter(
       ([url, init]) =>
@@ -803,9 +811,9 @@ describe("AdminCalendar Manage-availability mode", () => {
 
     render(<AdminCalendar onSessionEnded={() => {}} />);
     await screen.findByTestId("admin-calendar-grid");
-    fireEvent.click(screen.getByRole("button", { name: "Manage availability" }));
+    fireEvent.click(screen.getByRole("button", { name: "Hallinnoi saatavuutta" }));
 
-    const blockedEvent = await screen.findByText("Blocked");
+    const blockedEvent = await screen.findByText("Estetty");
     expect(blockedEvent.closest(".rbc-event")).toHaveClass("admin-calendar-event-blocked");
 
     const bookingEvent = screen.getByText("Deep Tissue Massage — Jane Doe").closest(".rbc-event");
@@ -818,13 +826,13 @@ describe("AdminCalendar Manage-availability mode", () => {
 
     render(<AdminCalendar onSessionEnded={() => {}} />);
     await screen.findByTestId("admin-calendar-grid");
-    fireEvent.click(screen.getByRole("button", { name: "Manage availability" }));
+    fireEvent.click(screen.getByRole("button", { name: "Hallinnoi saatavuutta" }));
 
-    const blockedEvent = await screen.findByText("Blocked");
+    const blockedEvent = await screen.findByText("Estetty");
     fireEvent.click(blockedEvent);
 
     await waitFor(() => {
-      expect(screen.queryByText("Blocked")).toBeNull();
+      expect(screen.queryByText("Estetty")).toBeNull();
     });
     const deleteCalls = fetchMock.mock.calls.filter(
       ([url, init]) =>
@@ -843,13 +851,13 @@ describe("AdminCalendar Manage-availability mode", () => {
 
     render(<AdminCalendar onSessionEnded={() => {}} />);
     await screen.findByTestId("admin-calendar-grid");
-    fireEvent.click(screen.getByRole("button", { name: "Manage availability" }));
+    fireEvent.click(screen.getByRole("button", { name: "Hallinnoi saatavuutta" }));
 
-    const blockedEvent = await screen.findByText("Blocked");
+    const blockedEvent = await screen.findByText("Estetty");
     fireEvent.click(blockedEvent);
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Availability exception not found");
-    expect(screen.getByText("Blocked")).not.toBeNull();
+    expect(screen.getByText("Estetty")).not.toBeNull();
   });
 
   it("View mode's Calendar props are unaffected -- selecting a slot does nothing outside Manage mode", async () => {

@@ -5,6 +5,7 @@ import {
   luxonLocalizer,
   Views,
   type DateHeaderProps,
+  type Messages,
   type SlotInfo,
   type View,
 } from "react-big-calendar";
@@ -21,6 +22,7 @@ import {
   getAvailabilityExceptions,
 } from "../api/client";
 import type { AdminBooking, AvailabilityException } from "../api/types";
+import { STATUS_LABELS_FI } from "../lib/statusLabels";
 
 // Positions events using the browser's local timezone (react-big-calendar
 // renders plain JS Dates in whatever timezone the runtime is in). This
@@ -33,6 +35,28 @@ import type { AdminBooking, AvailabilityException } from "../api/types";
 const localizer = luxonLocalizer(DateTime, { firstDayOfWeek: 1 });
 
 const CALENDAR_VIEWS: View[] = [Views.MONTH, Views.WEEK, Views.DAY];
+
+// Full Messages coverage, not just the toolbar entries CALENDAR_VIEWS
+// currently exposes (Month/Week/Day) -- cheap, and avoids an English
+// straggler if Agenda/Work-week are ever added to CALENDAR_VIEWS later.
+const CALENDAR_MESSAGES: Messages<CalendarEvent> = {
+  today: "Tänään",
+  previous: "Edellinen",
+  next: "Seuraava",
+  month: "Kuukausi",
+  week: "Viikko",
+  day: "Päivä",
+  agenda: "Agenda",
+  date: "Päivämäärä",
+  time: "Aika",
+  event: "Tapahtuma",
+  allDay: "Koko päivä",
+  yesterday: "Eilen",
+  tomorrow: "Huomenna",
+  work_week: "Työviikko",
+  noEventsInRange: "Ei tapahtumia tällä aikavälillä",
+  showMore: (count) => `+${count} lisää`,
+};
 
 const FULL_DAY_START = "00:00:00";
 const FULL_DAY_END = "23:59:59";
@@ -101,7 +125,7 @@ export function planSlotBlock(
   const startDate = toLocalDateString(slotInfo.start);
   const endDate = toLocalDateString(slotInfo.end);
   if (startDate !== endDate) {
-    return { error: "Can't block a range that crosses midnight -- select a range within a single day." };
+    return { error: "Ei voi estää aikaväliä, joka ylittää vuorokauden vaihtumisen -- valitse aikaväli yhden päivän sisältä." };
   }
   return {
     dates: [startDate],
@@ -150,7 +174,7 @@ export async function runBatchBlock(
       }
       failed.push({
         date,
-        message: error instanceof ApiError ? error.message : "Could not block this date.",
+        message: error instanceof ApiError ? error.message : "Tätä päivää ei voitu estää.",
       });
     }
   }
@@ -182,10 +206,10 @@ function makeDateHeaderComponent(onJumpToWeek: (weekStart: Date) => void) {
           <button
             type="button"
             className="admin-calendar-week-number"
-            aria-label={`Week ${isoWeekNumberForRow(date)}`}
+            aria-label={`Viikko ${isoWeekNumberForRow(date)}`}
             onClick={() => onJumpToWeek(date)}
           >
-            Wk {isoWeekNumberForRow(date)}
+            Vk {isoWeekNumberForRow(date)}
           </button>
         )}
         {drilldownView ? (
@@ -206,13 +230,22 @@ function dateAtLocalTime(year: number, month: number, day: number, time: string)
   return new Date(year, month - 1, day, hours, minutes, seconds);
 }
 
+// Deliberately NOT a single Intl.DateTimeFormat call with weekday+month+day+
+// year all requested together -- tested directly: for the "fi" locale, adding
+// `year` to that field set flips the weekday from nominative ("keskiviikko")
+// to essive ("keskiviikkona"), since CLDR's fi "full date" pattern differs
+// from its "long date" pattern. Requesting weekday+month+day WITHOUT year
+// gives the nominative weekday and correctly-inflected partitive month
+// together ("keskiviikko 12. elokuuta"), matching the house style
+// timeFormat.ts (backend) already established; the year is appended
+// separately to keep that form.
 function formatDateLong(date: Date): string {
-  return new Intl.DateTimeFormat(undefined, {
+  const weekdayMonthDay = new Intl.DateTimeFormat("fi", {
     weekday: "long",
     month: "long",
     day: "numeric",
-    year: "numeric",
   }).format(date);
+  return `${weekdayMonthDay} ${date.getFullYear()}`;
 }
 
 function toBookingEvent(booking: AdminBooking): CalendarEvent {
@@ -232,7 +265,9 @@ function toExceptionEvent(exception: AvailabilityException): CalendarEvent {
   return {
     kind: "exception",
     id: exception.id,
-    title: isFullDay ? "Blocked" : `Blocked ${exception.start_time.slice(0, 5)}–${exception.end_time.slice(0, 5)}`,
+    title: isFullDay
+      ? "Estetty"
+      : `Estetty ${exception.start_time.slice(0, 5)}–${exception.end_time.slice(0, 5)}`,
     start: dateAtLocalTime(year, month, day, exception.start_time),
     end: dateAtLocalTime(year, month, day, exception.end_time),
     exception,
@@ -249,15 +284,20 @@ function eventPropGetter(event: CalendarEvent) {
   };
 }
 
+// Finnish grammar, not a mechanical port of the English pluralization:
+// cardinal numerals other than 1 take the partitive singular ("uutta
+// päivää"), not a separate plural noun form the way English "days" is just
+// "day" + "s". And unlike English's was/were, Finnish keeps the verb in 3rd
+// person singular ("oli") regardless of the partitive-quantified count, so
+// no singular/plural verb split is needed there at all.
 export function formatBatchResult(result: BatchBlockResult): string {
-  const dayWord = result.newlyBlocked.length === 1 ? "day" : "days";
-  let message = `Blocked ${result.newlyBlocked.length} new ${dayWord}`;
+  const dayPhrase = result.newlyBlocked.length === 1 ? "uusi päivä" : "uutta päivää";
+  let message = `Estetty ${result.newlyBlocked.length} ${dayPhrase}`;
   if (result.alreadyBlocked.length > 0) {
-    const wasWere = result.alreadyBlocked.length === 1 ? "was" : "were";
-    message += ` (${result.alreadyBlocked.length} ${wasWere} already blocked)`;
+    message += ` (${result.alreadyBlocked.length} oli jo estetty)`;
   }
   if (result.failed.length > 0) {
-    message += `. Failed: ${result.failed.map((failure) => `${failure.date} (${failure.message})`).join(", ")}`;
+    message += `. Epäonnistui: ${result.failed.map((failure) => `${failure.date} (${failure.message})`).join(", ")}`;
   }
   return message;
 }
@@ -303,7 +343,7 @@ export function AdminCalendar({ onSessionEnded }: Props) {
           onSessionEnded();
           return;
         }
-        setLoadError("Could not load the calendar. Please try again shortly.");
+        setLoadError("Kalenteria ei voitu ladata. Yritä hetken kuluttua uudelleen.");
       });
 
     return () => {
@@ -333,7 +373,7 @@ export function AdminCalendar({ onSessionEnded }: Props) {
           onSessionEnded();
           return;
         }
-        setExceptionsError("Could not load blocked dates. Please try again shortly.");
+        setExceptionsError("Estettyjä päiviä ei voitu ladata. Yritä hetken kuluttua uudelleen.");
       });
 
     return () => {
@@ -419,7 +459,7 @@ export function AdminCalendar({ onSessionEnded }: Props) {
         return;
       }
       setActionError(
-        error instanceof ApiError ? error.message : "Could not confirm this booking. Please try again.",
+        error instanceof ApiError ? error.message : "Varausta ei voitu vahvistaa. Yritä uudelleen.",
       );
     }
   }
@@ -441,7 +481,7 @@ export function AdminCalendar({ onSessionEnded }: Props) {
         return;
       }
       setActionError(
-        error instanceof ApiError ? error.message : "Could not decline this booking. Please try again.",
+        error instanceof ApiError ? error.message : "Varausta ei voitu hylätä. Yritä uudelleen.",
       );
     }
   }
@@ -463,7 +503,7 @@ export function AdminCalendar({ onSessionEnded }: Props) {
         return;
       }
       setActionError(
-        error instanceof ApiError ? error.message : "Could not cancel this booking. Please try again.",
+        error instanceof ApiError ? error.message : "Varausta ei voitu perua. Yritä uudelleen.",
       );
     }
   }
@@ -479,7 +519,7 @@ export function AdminCalendar({ onSessionEnded }: Props) {
         return;
       }
       setUnblockError(
-        error instanceof ApiError ? error.message : "Could not unblock this date. Please try again.",
+        error instanceof ApiError ? error.message : "Tämän päivän estoa ei voitu poistaa. Yritä uudelleen.",
       );
     }
   }
@@ -516,19 +556,19 @@ export function AdminCalendar({ onSessionEnded }: Props) {
 
   return (
     <div className="admin-calendar">
-      <section aria-label="Calendar mode">
+      <section aria-label="Kalenterin tila">
         <button
           type="button"
           className={`btn ${mode === "manage" ? "btn-primary" : "btn-secondary"}`}
           aria-pressed={mode === "manage"}
           onClick={() => handleModeChange(mode === "manage" ? "view" : "manage")}
         >
-          Manage availability
+          Hallinnoi saatavuutta
         </button>
       </section>
 
       {loadError && <p role="alert">{loadError}</p>}
-      {!loadError && bookings === null && <p>Loading calendar&hellip;</p>}
+      {!loadError && bookings === null && <p>Ladataan kalenteria&hellip;</p>}
       {exceptionsError && <p role="alert">{exceptionsError}</p>}
 
       {mode === "manage" && (
@@ -543,6 +583,8 @@ export function AdminCalendar({ onSessionEnded }: Props) {
         <div className="admin-calendar-grid" data-testid="admin-calendar-grid">
           <Calendar<CalendarEvent>
             localizer={localizer}
+            culture="fi"
+            messages={CALENDAR_MESSAGES}
             events={events}
             date={date}
             onNavigate={setDate}
@@ -562,28 +604,28 @@ export function AdminCalendar({ onSessionEnded }: Props) {
       )}
 
       {selectedBooking && (
-        <div className="admin-calendar-detail" role="dialog" aria-label="Booking details">
+        <div className="admin-calendar-detail" role="dialog" aria-label="Varauksen tiedot">
           <p>{selectedBooking.service_name}</p>
           <p>
-            {selectedBooking.start_at_local} to {selectedBooking.end_at_local}
+            {selectedBooking.start_at_local} &ndash; {selectedBooking.end_at_local}
           </p>
           <p>
             {selectedBooking.customer_name} &mdash; {selectedBooking.customer_email} &mdash;{" "}
             {selectedBooking.customer_phone}
           </p>
-          <p>Status: {selectedBooking.status}</p>
+          <p>Tila: {STATUS_LABELS_FI[selectedBooking.status]}</p>
 
           {actionError && <p role="alert">{actionError}</p>}
 
           {selectedBooking.status === "pending" && (
             <>
               <button type="button" onClick={() => void handleConfirm(selectedBooking.id)}>
-                Confirm
+                Vahvista
               </button>
               {decliningId === selectedBooking.id ? (
                 <>
                   <label>
-                    Reason (optional)
+                    Syy (valinnainen)
                     <textarea
                       value={declineReason}
                       maxLength={500}
@@ -591,7 +633,7 @@ export function AdminCalendar({ onSessionEnded }: Props) {
                     />
                   </label>
                   <button type="button" onClick={() => void handleDecline(selectedBooking.id)}>
-                    Confirm decline
+                    Vahvista hylkäys
                   </button>
                   <button
                     type="button"
@@ -600,7 +642,7 @@ export function AdminCalendar({ onSessionEnded }: Props) {
                       setDeclineReason("");
                     }}
                   >
-                    Cancel
+                    Peruuta
                   </button>
                 </>
               ) : (
@@ -611,7 +653,7 @@ export function AdminCalendar({ onSessionEnded }: Props) {
                     setDeclineReason("");
                   }}
                 >
-                  Decline
+                  Hylkää
                 </button>
               )}
             </>
@@ -621,7 +663,7 @@ export function AdminCalendar({ onSessionEnded }: Props) {
             (cancellingId === selectedBooking.id ? (
               <>
                 <label>
-                  Reason (optional)
+                  Syy (valinnainen)
                   <textarea
                     value={cancelReason}
                     maxLength={500}
@@ -629,7 +671,7 @@ export function AdminCalendar({ onSessionEnded }: Props) {
                   />
                 </label>
                 <button type="button" onClick={() => void handleCancel(selectedBooking.id)}>
-                  Confirm cancel
+                  Vahvista peruutus
                 </button>
                 <button
                   type="button"
@@ -638,7 +680,7 @@ export function AdminCalendar({ onSessionEnded }: Props) {
                     setCancelReason("");
                   }}
                 >
-                  Never mind
+                  Älä peru
                 </button>
               </>
             ) : (
@@ -649,22 +691,22 @@ export function AdminCalendar({ onSessionEnded }: Props) {
                   setCancelReason("");
                 }}
               >
-                Cancel booking
+                Peru varaus
               </button>
             ))}
 
           <button type="button" onClick={closeBookingDetail}>
-            Close
+            Sulje
           </button>
         </div>
       )}
 
       {selectedExceptionEvent && (
-        <div className="admin-calendar-detail" role="dialog" aria-label="Blocked time details">
+        <div className="admin-calendar-detail" role="dialog" aria-label="Estetyn ajan tiedot">
           <p>{selectedExceptionEvent.title}</p>
           <p>{formatDateLong(selectedExceptionEvent.start)}</p>
           <button type="button" onClick={() => setSelectedException(null)}>
-            Close
+            Sulje
           </button>
         </div>
       )}

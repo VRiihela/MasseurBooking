@@ -27,7 +27,7 @@ describe("AdminLoginRequest", () => {
     stubFetch(() => jsonResponse({ message: GENERIC_MESSAGE }));
 
     render(<AdminLoginRequest />);
-    fireEvent.change(screen.getByLabelText("Email"), {
+    fireEvent.change(screen.getByLabelText("Sähköposti"), {
       target: { value: "masseur@example.com" },
     });
     fireEvent.click(screen.getByTestId("request-login-link"));
@@ -39,10 +39,10 @@ describe("AdminLoginRequest", () => {
     const fetchMock = stubFetch(() => jsonResponse({ message: GENERIC_MESSAGE }));
 
     render(<AdminLoginRequest />);
-    fireEvent.change(screen.getByLabelText("Email"), { target: { value: "not-an-email" } });
+    fireEvent.change(screen.getByLabelText("Sähköposti"), { target: { value: "not-an-email" } });
     fireEvent.click(screen.getByTestId("request-login-link"));
 
-    expect(screen.getByRole("alert")).toHaveTextContent("valid email");
+    expect(screen.getByRole("alert")).toHaveTextContent("kelvollinen sähköpostiosoite");
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
@@ -50,11 +50,11 @@ describe("AdminLoginRequest", () => {
     stubFetch(() => jsonResponse({ error: "Too many requests" }, 429));
 
     render(<AdminLoginRequest />);
-    fireEvent.change(screen.getByLabelText("Email"), {
+    fireEvent.change(screen.getByLabelText("Sähköposti"), {
       target: { value: "masseur@example.com" },
     });
     fireEvent.click(screen.getByTestId("request-login-link"));
 
-    expect(await screen.findByRole("alert")).toHaveTextContent(/went wrong/i);
+    expect(await screen.findByRole("alert")).toHaveTextContent(/tapahtui virhe/i);
   });
 });

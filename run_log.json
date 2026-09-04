@@ -571,5 +571,29 @@
       "frontend/test/BookingWidget.test.tsx",
       "frontend/test/ManageBooking.test.tsx"
     ]
+  },
+  {
+    "id": "031-finnish-translation-admin-frontend",
+    "title": "Finnish translation: admin-facing frontend (Dashboard, Calendar, Availability, Services, Login)",
+    "profile": "React Frontend",
+    "timestamp": "2026-09-04T17:42:36.000Z",
+    "dodStatus": "pass",
+    "filesChanged": [
+      "agents/tasks/031-finnish-translation-admin-frontend.json",
+      "frontend/src/lib/statusLabels.ts",
+      "frontend/src/pages/AdminDashboard.tsx",
+      "frontend/src/pages/AdminAvailability.tsx",
+      "frontend/src/pages/AdminServices.tsx",
+      "frontend/src/pages/AdminLoginRequest.tsx",
+      "frontend/src/pages/AdminLoginCallback.tsx",
+      "frontend/src/pages/AdminCalendar.tsx",
+      "frontend/src/pages/ManageBooking.tsx",
+      "frontend/test/AdminDashboard.test.tsx",
+      "frontend/test/AdminAvailability.test.tsx",
+      "frontend/test/AdminServices.test.tsx",
+      "frontend/test/AdminLoginRequest.test.tsx",
+      "frontend/test/AdminLoginCallback.test.tsx",
+      "frontend/test/AdminCalendar.test.tsx"
+    ]
   }
 ]

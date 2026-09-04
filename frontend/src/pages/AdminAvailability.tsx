@@ -17,13 +17,13 @@ interface Props {
 // label list from a different convention than the wire format would swap
 // Sunday and Monday silently.
 const WEEKDAYS: { value: number; label: string }[] = [
-  { value: 1, label: "Monday" },
-  { value: 2, label: "Tuesday" },
-  { value: 3, label: "Wednesday" },
-  { value: 4, label: "Thursday" },
-  { value: 5, label: "Friday" },
-  { value: 6, label: "Saturday" },
-  { value: 7, label: "Sunday" },
+  { value: 1, label: "Maanantai" },
+  { value: 2, label: "Tiistai" },
+  { value: 3, label: "Keskiviikko" },
+  { value: 4, label: "Torstai" },
+  { value: 5, label: "Perjantai" },
+  { value: 6, label: "Lauantai" },
+  { value: 7, label: "Sunnuntai" },
 ];
 
 interface AddFormState {
@@ -71,7 +71,7 @@ export function AdminAvailability({ onSessionEnded }: Props) {
           onSessionEnded();
           return;
         }
-        setLoadError("Could not load your availability. Please try again shortly.");
+        setLoadError("Saatavuuttasi ei voitu ladata. Yritä hetken kuluttua uudelleen.");
       });
 
     return () => {
@@ -97,11 +97,11 @@ export function AdminAvailability({ onSessionEnded }: Props) {
   async function handleAddRule(weekday: number) {
     const form = addForms[weekday];
     if (!form.start || !form.end) {
-      updateAddForm(weekday, { error: "Enter both a start and end time." });
+      updateAddForm(weekday, { error: "Anna sekä alkamis- että päättymisaika." });
       return;
     }
     if (form.end <= form.start) {
-      updateAddForm(weekday, { error: "End time must be after start time." });
+      updateAddForm(weekday, { error: "Päättymisajan on oltava alkamisajan jälkeen." });
       return;
     }
     updateAddForm(weekday, { error: null });
@@ -120,7 +120,7 @@ export function AdminAvailability({ onSessionEnded }: Props) {
         return;
       }
       const message =
-        error instanceof ApiError ? error.message : "Could not add this time range. Please try again.";
+        error instanceof ApiError ? error.message : "Aikaväliä ei voitu lisätä. Yritä uudelleen.";
       updateAddForm(weekday, { error: message });
     }
   }
@@ -136,7 +136,7 @@ export function AdminAvailability({ onSessionEnded }: Props) {
         return;
       }
       setDeleteError(
-        error instanceof ApiError ? error.message : "Could not delete this time range. Please try again.",
+        error instanceof ApiError ? error.message : "Aikaväliä ei voitu poistaa. Yritä uudelleen.",
       );
     }
   }
@@ -145,7 +145,7 @@ export function AdminAvailability({ onSessionEnded }: Props) {
     <div className="admin-availability page">
       {loadError && <p role="alert">{loadError}</p>}
       {deleteError && <p role="alert">{deleteError}</p>}
-      {!loadError && rules === null && <p className="loading-text">Loading availability&hellip;</p>}
+      {!loadError && rules === null && <p className="loading-text">Ladataan saatavuutta&hellip;</p>}
 
       {rules !== null && (
         <ul className="admin-availability-weekdays">
@@ -158,14 +158,14 @@ export function AdminAvailability({ onSessionEnded }: Props) {
                 <h2>{weekday.label}</h2>
 
                 {dayRules.length === 0 ? (
-                  <p>No hours set</p>
+                  <p>Ei asetettuja aikoja</p>
                 ) : (
                   <ul>
                     {dayRules.map((rule) => (
                       <li key={rule.id} data-testid={`rule-${rule.id}`}>
                         {rule.start_time.slice(0, 5)}&ndash;{rule.end_time.slice(0, 5)}
                         <button type="button" className="btn btn-secondary" onClick={() => void handleDeleteRule(rule.id)}>
-                          Delete
+                          Poista
                         </button>
                       </li>
                     ))}
@@ -175,7 +175,7 @@ export function AdminAvailability({ onSessionEnded }: Props) {
                 <div>
                   <div className="field">
                     <label>
-                      Start time
+                      Alkamisaika
                       <input
                         type="time"
                         value={form.start}
@@ -185,7 +185,7 @@ export function AdminAvailability({ onSessionEnded }: Props) {
                   </div>
                   <div className="field">
                     <label>
-                      End time
+                      Päättymisaika
                       <input
                         type="time"
                         value={form.end}
@@ -194,7 +194,7 @@ export function AdminAvailability({ onSessionEnded }: Props) {
                     </label>
                   </div>
                   <button type="button" className="btn btn-primary" onClick={() => void handleAddRule(weekday.value)}>
-                    Add time range
+                    Lisää aikaväli
                   </button>
                   {form.error && <p role="alert">{form.error}</p>}
                 </div>

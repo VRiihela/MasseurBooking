@@ -1,0 +1,28 @@
+{
+  "title": "Finnish translation: admin-facing frontend (Dashboard, Calendar, Availability, Services, Login)",
+  "profile": "React Frontend",
+  "repo": "masseur-booking",
+  "tech": "React + TypeScript frontend only -- no new dependency (no i18n library, full replacement per established decision); react-big-calendar's built-in messages prop and Luxon's locale support handle the calendar's own library-provided text",
+  "keyConstraints": "Full replacement to Finnish, no toggle -- consistent with tasks 029/030. Queue after task 029 (backend), since AdminDashboard.tsx's booking list displays start_at_local/end_at_local from the backend and will inherit Finnish formatting automatically once that lands. Scope: AdminDashboard.tsx (view toggle, status filter, booking list, Confirm/Decline/Cancel reveal-forms, Log out), AdminAvailability.tsx (weekly-hours editor, all 7 day labels and their ordering already come from a static array -- translate the day names, e.g. 'Monday'->'Maanantai' etc.), AdminServices.tsx (service list, create/edit forms, field labels including the 'massage duration' vs 'buffer before/after' distinction established in task 021), AdminLoginRequest.tsx, AdminLoginCallback.tsx, and AdminCalendar.tsx. AdminCalendar.tsx has two distinct translation surfaces, confirmed by reading the file and react-big-calendar's type definitions: (1) this app's OWN text -- the View/Manage-availability toggle, booking detail popup, blocked-time detail popup, batch-block result summary ('Blocked N new days...'), the 'Wk' week-number badge prefix from task 028 (Finnish abbreviation for viikko is 'Vk', not 'Wk'); (2) react-big-calendar's OWN built-in text -- Today/Back/Next/Month/Week/Day and the weekday/month names in the grid -- these are NOT hardcoded in this app's JSX, they come from the library's messages prop (react-big-calendar's Messages interface: today/previous/next/month/week/day/agenda/date/time/event/allDay/showMore/noEventsInRange -- confirmed via node_modules/@types/react-big-calendar/index.d.ts) which is currently unset (defaulting to English), and from the luxonLocalizer's locale (currently unset, defaulting to en-US for month/weekday names in the grid) -- both need explicit configuration, not per-string find-and-replace in this app's own code. Ville is a native Finnish speaker and should review the actual rendered copy during testing for naturalness, not just mechanical correctness.",
+  "description": "Translate all UI text across the admin dashboard to natural Finnish: AdminDashboard, AdminAvailability, AdminServices, AdminLoginRequest, AdminLoginCallback, and AdminCalendar -- including both this app's own text and react-big-calendar's built-in toolbar/grid text (via its messages prop and the Luxon localizer's locale), so nothing in the calendar remains in English.",
+  "acceptanceCriteria": [
+    "All visible text in AdminDashboard.tsx, AdminAvailability.tsx, AdminServices.tsx, AdminLoginRequest.tsx, and AdminLoginCallback.tsx is in Finnish",
+    "AdminCalendar.tsx's own text (mode toggle, both detail popups, batch-block summary, week-number badge prefix) is in Finnish",
+    "react-big-calendar's built-in toolbar and grid text (Today/Back/Next/Month/Week/Day, weekday column headers, month names) is in Finnish via the library's messages prop and the localizer's locale -- not left in English as an oversight",
+    "AdminAvailability.tsx's 7 weekday labels are correctly translated and remain in the correct order (Monday-first, matching the existing 1-7 weekday convention)",
+    "Raw English status enum values are never shown directly -- translated labels used wherever booking/service status is displayed as text",
+    "Existing test suites for all six admin pages (AdminDashboard, AdminCalendar, AdminAvailability, AdminServices, AdminLoginRequest, AdminLoginCallback) are deliberately updated to the new Finnish text -- this will touch most of every test file, since RTL queries by visible text/label/role-name throughout this project; update with reasoning, checking each assertion still tests the right behavior, not just find-and-replace",
+    "npm test, npm run build, npm run lint, and tsc --noEmit all pass in frontend/ (backend should be unaffected since no backend files change)"
+  ],
+  "relevantFilePaths": [
+    "frontend/src/pages/AdminDashboard.tsx",
+    "frontend/src/pages/AdminAvailability.tsx",
+    "frontend/src/pages/AdminServices.tsx",
+    "frontend/src/pages/AdminLoginRequest.tsx",
+    "frontend/src/pages/AdminLoginCallback.tsx",
+    "frontend/src/pages/AdminCalendar.tsx (own text + react-big-calendar messages/locale configuration)",
+    "frontend/node_modules/@types/react-big-calendar/index.d.ts (read-only reference -- Messages interface shape)",
+    "frontend/test/AdminDashboard.test.tsx, AdminCalendar.test.tsx, AdminAvailability.test.tsx, AdminServices.test.tsx, AdminLoginRequest.test.tsx, AdminLoginCallback.test.tsx"
+  ],
+  "securityConsiderations": "None -- purely text/formatting/localization change, no new data handling, no new API calls, no validation change."
+}
