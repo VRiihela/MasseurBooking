@@ -24,6 +24,7 @@ interface Props {
 export function AdminDashboard({ onSessionEnded }: Props) {
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [statusFilter, setStatusFilter] = useState<AdminBookingStatusFilter>("pending");
+  const [showPast, setShowPast] = useState(false);
   const [bookings, setBookings] = useState<AdminBooking[] | null>(null);
   const [listError, setListError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -123,6 +124,16 @@ export function AdminDashboard({ onSessionEnded }: Props) {
     }
   }
 
+  // A booking counts as "past" only once it has FULLY ENDED (end_at < now),
+  // not once it has merely started -- a booking currently in progress must
+  // still show by default. Always uses the raw ISO end_at, never
+  // end_at_local (a backend-formatted display string, not safe to parse).
+  const now = Date.now();
+  const isPast = (booking: AdminBooking) => new Date(booking.end_at).getTime() < now;
+  const visibleBookings = bookings?.filter((booking) => showPast || !isPast(booking)) ?? null;
+  const hasHiddenPastBookings =
+    !showPast && (bookings?.some((booking) => isPast(booking)) ?? false);
+
   return (
     <div className="page">
       <h1>Varaukset</h1>
@@ -183,15 +194,26 @@ export function AdminDashboard({ onSessionEnded }: Props) {
                 {FILTER_LABELS_FI[filter]}
               </button>
             ))}
+            <button
+              type="button"
+              className={`btn ${showPast ? "btn-primary" : "btn-secondary"}`}
+              aria-pressed={showPast}
+              onClick={() => setShowPast((current) => !current)}
+            >
+              {showPast ? "Piilota menneet varaukset" : "Näytä menneet varaukset"}
+            </button>
           </section>
 
           {actionError && <p role="alert">{actionError}</p>}
           {listError && <p role="alert">{listError}</p>}
           {!listError && bookings === null && <p className="loading-text">Ladataan varauksia&hellip;</p>}
           {bookings?.length === 0 && <p>Ei varauksia tässä näkymässä.</p>}
+          {visibleBookings?.length === 0 && hasHiddenPastBookings && (
+            <p>Ei tulevia varauksia. Menneet varaukset on piilotettu &mdash; näytä ne yllä olevasta painikkeesta.</p>
+          )}
 
           <ul>
-            {bookings?.map((booking) => (
+            {visibleBookings?.map((booking) => (
               <li key={booking.id} className="card" data-testid={`booking-${booking.id}`}>
                 <p>
                   {booking.service_name} &mdash; {booking.start_at_local} &ndash; {booking.end_at_local}
