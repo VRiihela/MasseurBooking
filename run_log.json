@@ -609,5 +609,17 @@
       "frontend/test/AdminLoginRequest.test.tsx",
       "frontend/test/AdminLoginCallback.test.tsx"
     ]
+  },
+  {
+    "id": "033-hide-past-bookings-by-default",
+    "title": "Hide past bookings by default in the admin List view, with a toggle to reveal them",
+    "profile": "React Frontend",
+    "timestamp": "2026-09-05T20:35:00.000Z",
+    "dodStatus": "pass",
+    "filesChanged": [
+      "agents/tasks/033-hide-past-bookings-by-default.json",
+      "frontend/src/pages/AdminDashboard.tsx",
+      "frontend/test/AdminDashboard.test.tsx"
+    ]
   }
 ]
