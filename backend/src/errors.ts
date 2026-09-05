@@ -29,7 +29,7 @@ export class SlotUnavailableError extends AppError {
 
 export class UnauthorizedError extends AppError {
   constructor() {
-    super(401, "Unauthorized");
+    super(401, "Kirjautumislinkki ei ole enää voimassa.");
   }
 }
 

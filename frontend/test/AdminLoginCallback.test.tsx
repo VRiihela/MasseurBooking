@@ -71,12 +71,12 @@ describe("AdminLoginCallback", () => {
     setSearch("?token=already-used");
     vi.stubGlobal(
       "fetch",
-      vi.fn(async () => jsonResponse({ error: "Unauthorized" }, 401)),
+      vi.fn(async () => jsonResponse({ error: "Kirjautumislinkki ei ole enää voimassa." }, 401)),
     );
 
     render(<AdminLoginCallback />);
 
-    expect(await screen.findByRole("alert")).toHaveTextContent("Unauthorized");
+    expect(await screen.findByRole("alert")).toHaveTextContent("Kirjautumislinkki ei ole enää voimassa.");
     expect(screen.getByRole("link", { name: /pyydä uusi kirjautumislinkki/i })).toHaveAttribute(
       "href",
       "/admin",

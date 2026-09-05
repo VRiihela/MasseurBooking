@@ -14,7 +14,8 @@ export const authRouter = Router();
 
 // Identical regardless of whether the submitted email matched ADMIN_EMAIL --
 // never branch this message on the result of requestLoginLink.
-const GENERIC_LOGIN_REQUEST_MESSAGE = "If that email is registered, a login link has been sent.";
+const GENERIC_LOGIN_REQUEST_MESSAGE =
+  "Jos sähköpostiosoite on rekisteröity, kirjautumislinkki on lähetetty.";
 
 authRouter.post("/auth/login-request", loginRequestRateLimit, async (req, res, next) => {
   try {

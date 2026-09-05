@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { AdminLoginRequest } from "../src/pages/AdminLoginRequest";
 
-const GENERIC_MESSAGE = "If that email is registered, a login link has been sent.";
+const GENERIC_MESSAGE = "Jos sähköpostiosoite on rekisteröity, kirjautumislinkki on lähetetty.";
 
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {

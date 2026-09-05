@@ -595,5 +595,19 @@
       "frontend/test/AdminLoginCallback.test.tsx",
       "frontend/test/AdminCalendar.test.tsx"
     ]
+  },
+  {
+    "id": "032-translate-unauthorized-and-login-request-message",
+    "title": "Finnish translation: UnauthorizedError message and the login-request confirmation message",
+    "profile": "Node/TypeScript Backend",
+    "timestamp": "2026-09-05T15:42:46.000Z",
+    "dodStatus": "pass",
+    "filesChanged": [
+      "agents/tasks/032-translate-unauthorized-and-login-request-message.json",
+      "backend/src/errors.ts",
+      "backend/src/routes/auth.ts",
+      "frontend/test/AdminLoginRequest.test.tsx",
+      "frontend/test/AdminLoginCallback.test.tsx"
+    ]
   }
 ]
