@@ -230,3 +230,22 @@ a {
     padding: var(--space-5);
   }
 }
+
+/* Admin-only width modifier -- applied alongside .page (never in place of
+   it) on AdminDashboard's outer wrapper only, so the customer booking flow
+   and login pages, which never opt into this class, are provably
+   unaffected. At 1024px+ ("large screen" per task 035) the four admin
+   views (List/Calendar/Availability/Services) get noticeably more room
+   than the shared 640px cap -- most usefully for AdminCalendar's grid,
+   which has no max-width of its own and otherwise just inherits whatever
+   its ancestor gives it. Capped at 1200px rather than left unbounded: wide
+   enough for a 7-column month grid to look comfortable (~171px/column),
+   not so wide it stretches thin on an ultrawide monitor -- a fixed
+   max-width already bounds that case without needing a second, even wider
+   breakpoint. Declared after the 640px block above so it wins the cascade
+   at 1024px+ (both rules match there; equal specificity, later wins). */
+@media (min-width: 1024px) {
+  .page-admin {
+    max-width: 1200px;
+  }
+}

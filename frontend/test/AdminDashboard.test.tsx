@@ -166,6 +166,17 @@ describe("AdminDashboard", () => {
     expect(bookingsCall?.init?.headers).toMatchObject({ Authorization: `Bearer ${TOKEN}` });
   });
 
+  it("applies the page-admin width modifier alongside the shared page class on its outer wrapper", async () => {
+    localStorage.setItem(SESSION_TOKEN_STORAGE_KEY, TOKEN);
+    stubFetch();
+
+    const { container } = render(<AdminDashboard onSessionEnded={() => {}} />);
+    await screen.findByTestId("booking-booking-1");
+
+    expect(container.firstElementChild).toHaveClass("page");
+    expect(container.firstElementChild).toHaveClass("page-admin");
+  });
+
   it("confirms a pending booking in place without refetching the list", async () => {
     localStorage.setItem(SESSION_TOKEN_STORAGE_KEY, TOKEN);
     const { fetchMock } = stubFetch();

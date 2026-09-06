@@ -142,7 +142,7 @@ export function AdminAvailability({ onSessionEnded }: Props) {
   }
 
   return (
-    <div className="admin-availability page">
+    <div className="admin-availability">
       {loadError && <p role="alert">{loadError}</p>}
       {deleteError && <p role="alert">{deleteError}</p>}
       {!loadError && rules === null && <p className="loading-text">Ladataan saatavuutta&hellip;</p>}

@@ -90,6 +90,17 @@ describe("AdminAvailability", () => {
     ]);
   });
 
+  it("does not apply its own page class, relying on AdminDashboard's outer wrapper for width", async () => {
+    localStorage.setItem(SESSION_TOKEN_STORAGE_KEY, TOKEN);
+    stubFetch({ rules: () => jsonResponse([]) });
+
+    const { container } = render(<AdminAvailability onSessionEnded={() => {}} />);
+    await screen.findByTestId("weekday-1");
+
+    expect(container.firstElementChild).toHaveClass("admin-availability");
+    expect(container.firstElementChild).not.toHaveClass("page");
+  });
+
   it("groups existing rules under the correct weekday and shows multiple ranges per day", async () => {
     localStorage.setItem(SESSION_TOKEN_STORAGE_KEY, TOKEN);
     stubFetch({ rules: () => jsonResponse([MONDAY_MORNING, MONDAY_AFTERNOON, TUESDAY]) });

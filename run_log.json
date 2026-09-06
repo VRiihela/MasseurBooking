@@ -634,5 +634,20 @@
       "frontend/src/styles/base.css",
       "frontend/test/AdminDashboard.test.tsx"
     ]
+  },
+  {
+    "id": "035-admin-wide-screen-layout",
+    "title": "Widen the admin dashboard's layout on large screens (especially the calendar)",
+    "profile": "React Frontend",
+    "timestamp": "2026-09-06T12:10:00.000Z",
+    "dodStatus": "pass",
+    "filesChanged": [
+      "agents/tasks/035-admin-wide-screen-layout.json",
+      "frontend/src/pages/AdminDashboard.tsx",
+      "frontend/src/pages/AdminAvailability.tsx",
+      "frontend/src/styles/base.css",
+      "frontend/test/AdminDashboard.test.tsx",
+      "frontend/test/AdminAvailability.test.tsx"
+    ]
   }
 ]

@@ -142,7 +142,7 @@ export function AdminDashboard({ onSessionEnded }: Props) {
     : null;
 
   return (
-    <div className="page">
+    <div className="page page-admin">
       <h1>Varaukset</h1>
       <button type="button" className="btn btn-back" onClick={() => void handleLogout()}>
         Kirjaudu ulos
