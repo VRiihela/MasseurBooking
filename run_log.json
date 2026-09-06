@@ -621,5 +621,18 @@
       "frontend/src/pages/AdminDashboard.tsx",
       "frontend/test/AdminDashboard.test.tsx"
     ]
+  },
+  {
+    "id": "034-admin-list-sort-and-toggle-density",
+    "title": "Admin List view: add newest/oldest sort control, and de-emphasize the past-bookings toggle to reduce button density",
+    "profile": "React Frontend",
+    "timestamp": "2026-09-06T11:25:00.000Z",
+    "dodStatus": "pass",
+    "filesChanged": [
+      "agents/tasks/034-admin-list-sort-and-toggle-density.json",
+      "frontend/src/pages/AdminDashboard.tsx",
+      "frontend/src/styles/base.css",
+      "frontend/test/AdminDashboard.test.tsx"
+    ]
   }
 ]

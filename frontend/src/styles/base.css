@@ -149,6 +149,30 @@ select:focus {
   font-weight: 400;
 }
 
+/* Lightweight text-style control for secondary toggles that shouldn't add to
+   the visual weight of the full-size pill-button rows above them (view mode,
+   status filter) -- e.g. the admin list's past-bookings and sort toggles.
+   The [aria-pressed="true"] variant darkens the text rather than adding a
+   background/border, so an active toggle reads as "on" without approaching
+   pill-button weight. */
+.btn-text {
+  display: inline-block;
+  padding: var(--space-1) var(--space-2);
+  margin: var(--space-1) var(--space-2) var(--space-1) 0;
+  border: none;
+  background: none;
+  color: var(--color-text-muted);
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: 400;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.btn-text[aria-pressed="true"] {
+  color: var(--color-text);
+}
+
 /* Option lists (service/slot picks) -- explicit full-width block so each
    option reliably takes its own row regardless of its text length, rather
    than relying on inline-block wrapping to look full-width incidentally. */

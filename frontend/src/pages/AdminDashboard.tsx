@@ -25,6 +25,7 @@ export function AdminDashboard({ onSessionEnded }: Props) {
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [statusFilter, setStatusFilter] = useState<AdminBookingStatusFilter>("pending");
   const [showPast, setShowPast] = useState(false);
+  const [sortNewestFirst, setSortNewestFirst] = useState(false);
   const [bookings, setBookings] = useState<AdminBooking[] | null>(null);
   const [listError, setListError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -133,6 +134,12 @@ export function AdminDashboard({ onSessionEnded }: Props) {
   const visibleBookings = bookings?.filter((booking) => showPast || !isPast(booking)) ?? null;
   const hasHiddenPastBookings =
     !showPast && (bookings?.some((booking) => isPast(booking)) ?? false);
+  const sortedBookings = visibleBookings
+    ? [...visibleBookings].sort((a, b) => {
+        const diff = new Date(a.start_at).getTime() - new Date(b.start_at).getTime();
+        return sortNewestFirst ? -diff : diff;
+      })
+    : null;
 
   return (
     <div className="page">
@@ -196,11 +203,19 @@ export function AdminDashboard({ onSessionEnded }: Props) {
             ))}
             <button
               type="button"
-              className={`btn ${showPast ? "btn-primary" : "btn-secondary"}`}
+              className="btn-text"
               aria-pressed={showPast}
               onClick={() => setShowPast((current) => !current)}
             >
               {showPast ? "Piilota menneet varaukset" : "Näytä menneet varaukset"}
+            </button>
+            <button
+              type="button"
+              className="btn-text"
+              aria-pressed={sortNewestFirst}
+              onClick={() => setSortNewestFirst((current) => !current)}
+            >
+              {sortNewestFirst ? "Näytä vanhimmat ensin" : "Näytä uusimmat ensin"}
             </button>
           </section>
 
@@ -213,7 +228,7 @@ export function AdminDashboard({ onSessionEnded }: Props) {
           )}
 
           <ul>
-            {visibleBookings?.map((booking) => (
+            {sortedBookings?.map((booking) => (
               <li key={booking.id} className="card" data-testid={`booking-${booking.id}`}>
                 <p>
                   {booking.service_name} &mdash; {booking.start_at_local} &ndash; {booking.end_at_local}

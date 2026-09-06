@@ -55,6 +55,23 @@ const IN_PROGRESS_BOOKING = {
   end_at_local: "lauantai 1. elokuuta 2026 klo 1.00",
 };
 
+// Upcoming, but earlier than PENDING_BOOKING/CONFIRMED_BOOKING -- pairs with
+// them to give the sort tests two visible bookings with distinct start_at
+// values (the fixtures above alone all share a single start_at).
+const EARLIER_BOOKING = {
+  ...PENDING_BOOKING,
+  id: "booking-5",
+  status: "confirmed",
+  start_at: "2026-08-05T06:00:00.000Z",
+  end_at: "2026-08-05T07:00:00.000Z",
+  start_at_local: "keskiviikko 5. elokuuta 2026 klo 9.00",
+  end_at_local: "keskiviikko 5. elokuuta 2026 klo 10.00",
+};
+
+function visibleBookingOrder(): string[] {
+  return screen.getAllByTestId(/^booking-/).map((el) => el.getAttribute("data-testid") ?? "");
+}
+
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
@@ -495,6 +512,70 @@ describe("AdminDashboard", () => {
       "aria-pressed",
       "true",
     );
+  });
+
+  it("sorts the list oldest-first by default and flips to newest-first via the sort toggle", async () => {
+    localStorage.setItem(SESSION_TOKEN_STORAGE_KEY, TOKEN);
+    stubFetch({ bookings: () => jsonResponse([PENDING_BOOKING, EARLIER_BOOKING]) });
+
+    render(<AdminDashboard onSessionEnded={() => {}} />);
+    await screen.findByTestId("booking-booking-1");
+    await screen.findByTestId("booking-booking-5");
+
+    expect(visibleBookingOrder()).toEqual(["booking-booking-5", "booking-booking-1"]);
+    const sortToggle = screen.getByRole("button", { name: "Näytä uusimmat ensin" });
+    expect(sortToggle).toHaveAttribute("aria-pressed", "false");
+
+    fireEvent.click(sortToggle);
+
+    expect(visibleBookingOrder()).toEqual(["booking-booking-1", "booking-booking-5"]);
+    expect(screen.getByRole("button", { name: "Näytä vanhimmat ensin" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Näytä vanhimmat ensin" }));
+
+    expect(visibleBookingOrder()).toEqual(["booking-booking-5", "booking-booking-1"]);
+  });
+
+  it("keeps the sort direction when the status filter changes", async () => {
+    localStorage.setItem(SESSION_TOKEN_STORAGE_KEY, TOKEN);
+    stubFetch({ bookings: () => jsonResponse([CONFIRMED_BOOKING, EARLIER_BOOKING]) });
+
+    render(<AdminDashboard onSessionEnded={() => {}} />);
+    await screen.findByTestId("booking-booking-2");
+    await screen.findByTestId("booking-booking-5");
+    expect(visibleBookingOrder()).toEqual(["booking-booking-5", "booking-booking-2"]);
+
+    fireEvent.click(screen.getByRole("button", { name: "Näytä uusimmat ensin" }));
+    expect(visibleBookingOrder()).toEqual(["booking-booking-2", "booking-booking-5"]);
+
+    fireEvent.click(screen.getByRole("button", { name: FILTER_LABELS_FI.confirmed }));
+
+    await screen.findByTestId("booking-booking-2");
+    await screen.findByTestId("booking-booking-5");
+    expect(visibleBookingOrder()).toEqual(["booking-booking-2", "booking-booking-5"]);
+    expect(screen.getByRole("button", { name: "Näytä vanhimmat ensin" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+  });
+
+  it("sorts across the full showPast-composed set, including a past booking", async () => {
+    localStorage.setItem(SESSION_TOKEN_STORAGE_KEY, TOKEN);
+    stubFetch({ bookings: () => jsonResponse([PENDING_BOOKING, PAST_BOOKING]) });
+
+    render(<AdminDashboard onSessionEnded={() => {}} />);
+    await screen.findByTestId("booking-booking-1");
+
+    fireEvent.click(screen.getByRole("button", { name: "Näytä menneet varaukset" }));
+    await screen.findByTestId("booking-booking-3");
+    expect(visibleBookingOrder()).toEqual(["booking-booking-3", "booking-booking-1"]);
+
+    fireEvent.click(screen.getByRole("button", { name: "Näytä uusimmat ensin" }));
+
+    expect(visibleBookingOrder()).toEqual(["booking-booking-1", "booking-booking-3"]);
   });
 
   it("logs out, clears the token, and ends the session even if the logout call fails", async () => {
