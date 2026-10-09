@@ -184,4 +184,24 @@ describe("BookingWidget", () => {
     ).padStart(2, "0")}`;
     expect(screen.getByLabelText("Päivämäärä")).toHaveAttribute("min", expected);
   });
+  it("links to the privacy notice in a new tab from the customer details form", async () => {
+    stubFetch();
+    render(<BookingWidget />);
+
+    await selectServiceAndSlot();
+
+    const link = screen.getByRole("link", { name: "Lue tietosuojaseloste" });
+    expect(link).toHaveAttribute("href", "/tietosuoja");
+    expect(link).toHaveAttribute("target", "_blank");
+    expect(link).toHaveAttribute("rel", "noopener noreferrer");
+  });
+
+  it("does not show the privacy link before the customer details step", async () => {
+    stubFetch();
+    render(<BookingWidget />);
+
+    await screen.findByTestId(`service-option-${SERVICE.id}`);
+
+    expect(screen.queryByRole("link", { name: "Lue tietosuojaseloste" })).not.toBeInTheDocument();
+  });
 });

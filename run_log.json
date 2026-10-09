@@ -649,5 +649,20 @@
       "frontend/test/AdminDashboard.test.tsx",
       "frontend/test/AdminAvailability.test.tsx"
     ]
+  },
+  {
+    "id": "037-privacy-notice-page",
+    "title": "Add a privacy notice (tietosuojaseloste) page, linked from the booking form",
+    "profile": "React Frontend",
+    "timestamp": "2026-10-09T09:06:06.000Z",
+    "dodStatus": "blocked: npm audit reports pre-existing HIGH/CRITICAL advisories in dev toolchain (tinypool, brace-expansion, source-map-js); not introduced by this task",
+    "filesChanged": [
+      "agents/tasks/037-privacy-notice-page.json",
+      "frontend/src/pages/PrivacyNotice.tsx",
+      "frontend/src/App.tsx",
+      "frontend/src/pages/BookingWidget.tsx",
+      "frontend/test/PrivacyNotice.test.tsx",
+      "frontend/test/BookingWidget.test.tsx"
+    ]
   }
 ]

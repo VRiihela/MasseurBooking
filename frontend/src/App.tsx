@@ -5,6 +5,7 @@ import { AdminLoginCallback } from "./pages/AdminLoginCallback";
 import { AdminLoginRequest } from "./pages/AdminLoginRequest";
 import { BookingWidget } from "./pages/BookingWidget";
 import { ManageBooking } from "./pages/ManageBooking";
+import { PrivacyNotice } from "./pages/PrivacyNotice";
 
 function AdminRoute() {
   const [hasSession, setHasSession] = useState(() => getStoredSessionToken() !== null);
@@ -30,6 +31,10 @@ export function App() {
   const manageBookingMatch = path.match(/^\/bookings\/([^/]+)$/);
   if (manageBookingMatch) {
     return <ManageBooking bookingId={manageBookingMatch[1]} />;
+  }
+
+  if (path === "/tietosuoja") {
+    return <PrivacyNotice />;
   }
 
   return <BookingWidget />;

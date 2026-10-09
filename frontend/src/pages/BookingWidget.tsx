@@ -257,6 +257,13 @@ export function BookingWidget() {
                 />
               </label>
             </div>
+            {/* New tab: a same-tab navigation would full-reload the app and
+                discard the selected slot and typed details. */}
+            <p>
+              <a href="/tietosuoja" target="_blank" rel="noopener noreferrer">
+                Lue tietosuojaseloste
+              </a>
+            </p>
             <button type="submit" className="btn btn-primary" data-testid="submit-booking" disabled={submitting}>
               {submitting ? "Lähetetään…" : "Lähetä varauspyyntö"}
             </button>
