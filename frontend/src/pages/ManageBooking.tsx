@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ApiError,
   cancelBooking,
@@ -7,6 +7,7 @@ import {
   rescheduleBooking,
 } from "../api/client";
 import type { CustomerBookingView } from "../api/types";
+import { SlotGrid, SlotPickerHeader } from "../components/SlotGrid";
 import { formatSlotLocal } from "../lib/formatSlotLocal";
 import { STATUS_LABELS_FI } from "../lib/statusLabels";
 
@@ -43,6 +44,10 @@ export function ManageBooking({ bookingId }: Props) {
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [slotTakenMessage, setSlotTakenMessage] = useState<string | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
+  // Tiles show only a time, so a late response for a previous date would put
+  // that date's times under the current date's header. Only the latest
+  // request may update slot state.
+  const latestSlotsRequest = useRef(0);
 
   function loadBooking() {
     if (!token) {
@@ -61,15 +66,23 @@ export function ManageBooking({ bookingId }: Props) {
     if (!token) {
       return;
     }
+    latestSlotsRequest.current += 1;
+    const requestId = latestSlotsRequest.current;
     setSlotsLoading(true);
     setSlotsError(null);
     try {
       const result = await getAvailability(serviceId, forDate);
-      setSlots(result);
+      if (requestId === latestSlotsRequest.current) {
+        setSlots(result);
+      }
     } catch {
-      setSlotsError("Vapaita aikoja ei voitu ladata. Yritä hetken kuluttua uudelleen.");
+      if (requestId === latestSlotsRequest.current) {
+        setSlotsError("Vapaita aikoja ei voitu ladata. Yritä hetken kuluttua uudelleen.");
+      }
     } finally {
-      setSlotsLoading(false);
+      if (requestId === latestSlotsRequest.current) {
+        setSlotsLoading(false);
+      }
     }
   }
 
@@ -231,6 +244,7 @@ export function ManageBooking({ bookingId }: Props) {
             >
               &lsaquo; Takaisin
             </button>
+            <SlotPickerHeader serviceName={view.service_name} date={date} />
             {slotTakenMessage && <p role="alert">{slotTakenMessage}</p>}
             <div className="field">
               <label>
@@ -247,19 +261,12 @@ export function ManageBooking({ bookingId }: Props) {
             {!slotsLoading && !slotsError && slots?.length === 0 && (
               <p>Ei vapaita aikoja tälle päivälle.</p>
             )}
-            <div>
-              {slots?.map((slot) => (
-                <button
-                  key={slot}
-                  type="button"
-                  className="btn btn-secondary btn-block"
-                  data-testid={`slot-option-${slot}`}
-                  onClick={() => setSelectedSlot(slot)}
-                >
-                  {formatSlotLocal(slot)}
-                </button>
-              ))}
-            </div>
+            {/* Hidden while loading or errored: slots still holds the previous
+                date's times at that point, but the header already shows the
+                new date. */}
+            {!slotsLoading && !slotsError && slots && slots.length > 0 && (
+              <SlotGrid slots={slots} selectedSlot={selectedSlot} onSelect={setSelectedSlot} />
+            )}
 
             {selectedSlot && (
               <div>

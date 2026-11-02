@@ -1,6 +1,7 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { ApiError, createBooking, getAvailability, getServices } from "../api/client";
 import type { Service } from "../api/types";
+import { SlotGrid, SlotPickerHeader } from "../components/SlotGrid";
 import { formatSlotLocal } from "../lib/formatSlotLocal";
 
 type Step = "select-service" | "select-slot" | "form" | "confirmation";
@@ -31,6 +32,10 @@ export function BookingWidget() {
   const [slotsError, setSlotsError] = useState<string | null>(null);
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [slotTakenMessage, setSlotTakenMessage] = useState<string | null>(null);
+  // Tiles show only a time, so a late response for a previous date would put
+  // that date's times under the current date's header. Only the latest
+  // request may update slot state.
+  const latestSlotsRequest = useRef(0);
 
   // The exact UTC ISO string as returned by GET /availability -- never
   // reformatted or reconstructed, so it round-trips unmodified into
@@ -52,15 +57,23 @@ export function BookingWidget() {
   }, []);
 
   async function fetchSlots(serviceId: string, forDate: string) {
+    latestSlotsRequest.current += 1;
+    const requestId = latestSlotsRequest.current;
     setSlotsLoading(true);
     setSlotsError(null);
     try {
       const result = await getAvailability(serviceId, forDate);
-      setSlots(result);
+      if (requestId === latestSlotsRequest.current) {
+        setSlots(result);
+      }
     } catch {
-      setSlotsError("Vapaita aikoja ei voitu ladata. Yritä hetken kuluttua uudelleen.");
+      if (requestId === latestSlotsRequest.current) {
+        setSlotsError("Vapaita aikoja ei voitu ladata. Yritä hetken kuluttua uudelleen.");
+      }
     } finally {
-      setSlotsLoading(false);
+      if (requestId === latestSlotsRequest.current) {
+        setSlotsLoading(false);
+      }
     }
   }
 
@@ -180,7 +193,7 @@ export function BookingWidget() {
           <button type="button" className="btn btn-back" onClick={() => setStep("select-service")}>
             &lsaquo; Takaisin
           </button>
-          <p>{selectedService.name}</p>
+          <SlotPickerHeader serviceName={selectedService.name} date={date} />
           {slotTakenMessage && <p role="alert">{slotTakenMessage}</p>}
           <div className="field">
             <label>
@@ -198,19 +211,12 @@ export function BookingWidget() {
           {!slotsLoading && !slotsError && slots?.length === 0 && (
             <p>Ei vapaita aikoja tälle päivälle.</p>
           )}
-          <div>
-            {slots?.map((slot) => (
-              <button
-                key={slot}
-                type="button"
-                className="btn btn-secondary btn-block"
-                data-testid={`slot-option-${slot}`}
-                onClick={() => handleSelectSlot(slot)}
-              >
-                {formatSlotLocal(slot)}
-              </button>
-            ))}
-          </div>
+          {/* Hidden while loading or errored: slots still holds the previous
+              date's times at that point, but the header already shows the new
+              date. */}
+          {!slotsLoading && !slotsError && slots && slots.length > 0 && (
+            <SlotGrid slots={slots} selectedSlot={selectedSlot} onSelect={handleSelectSlot} />
+          )}
         </section>
       )}
 

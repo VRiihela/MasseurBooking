@@ -664,5 +664,23 @@
       "frontend/test/PrivacyNotice.test.tsx",
       "frontend/test/BookingWidget.test.tsx"
     ]
+  },
+  {
+    "id": "038-slot-picker-grid-layout",
+    "title": "Customer slot picker: two-column time grid, time-only tiles, date + weekday in the card header",
+    "profile": "React Frontend",
+    "timestamp": "2026-11-02T15:05:00.000Z",
+    "dodStatus": "blocked: npm audit reports pre-existing HIGH/CRITICAL advisories in dev toolchain (identical on clean HEAD); not introduced by this task",
+    "filesChanged": [
+      "agents/tasks/038-slot-picker-grid-layout.json",
+      "frontend/src/components/SlotGrid.tsx",
+      "frontend/src/lib/formatSlotLocal.ts",
+      "frontend/src/pages/BookingWidget.tsx",
+      "frontend/src/pages/ManageBooking.tsx",
+      "frontend/src/styles/base.css",
+      "frontend/test/formatSlotLocal.test.ts",
+      "frontend/test/BookingWidget.test.tsx",
+      "frontend/test/ManageBooking.test.tsx"
+    ]
   }
 ]
