@@ -17,6 +17,8 @@
   --color-danger: #b91c1c;
   --color-danger-bg: #fef2f2;
   --color-danger-border: #fecaca;
+  --color-selected-bg: #eff6ff;
+  --color-selected-border: #2563eb;
 
   --space-1: 0.25rem;
   --space-2: 0.5rem;
@@ -173,14 +175,50 @@ select:focus {
   color: var(--color-text);
 }
 
-/* Option lists (service/slot picks) -- explicit full-width block so each
-   option reliably takes its own row regardless of its text length, rather
-   than relying on inline-block wrapping to look full-width incidentally. */
-.btn-block {
+/* Slot picker header: service on the left, date on the right, wrapping rather
+   than squeezing when a long service name meets a narrow phone. */
+.slot-picker-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-1) var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.slot-picker-date {
+  color: var(--color-text-muted);
+}
+
+.slot-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+/* Layered on .btn for its 44px minimum tap target; the grid gap replaces its
+   margin. */
+.slot-tile {
   display: block;
   width: 100%;
-  margin: 0 0 var(--space-2) 0;
+  margin: 0;
   text-align: left;
+}
+
+.slot-tile-line {
+  display: block;
+}
+
+/* Keyed off aria-pressed, like .btn-text, so the highlight can't drift out of
+   sync with the state exposed to assistive tech. */
+.slot-tile[aria-pressed="true"] {
+  background-color: var(--color-selected-bg);
+  border-color: var(--color-selected-border);
+}
+
+.slot-tile-selected-label {
+  font-size: var(--font-size-sm);
+  font-weight: 400;
 }
 
 /* Every alert/error message in the app is already marked role="alert", so
