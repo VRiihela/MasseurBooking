@@ -4,3 +4,4 @@ dist/
 .env.test
 .DS_Store
 documents/cli-cheatsheet.md
+PRE_LAUNCH_CHECKLIST.md

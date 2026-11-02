@@ -8,7 +8,7 @@ import {
   unionIntervals,
 } from "./availabilityIntervals.js";
 
-const SLOT_GRANULARITY_MINUTES = 15;
+const SLOT_GRANULARITY_MINUTES = 30;
 
 interface ServiceWithProviderRow {
   provider_id: string;
