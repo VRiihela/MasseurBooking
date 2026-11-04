@@ -4,5 +4,5 @@ import { z } from "zod";
 // availability-exceptions) -- a plain UUID :id check with a message that
 // doesn't name a specific resource, unlike bookingIdParamSchema.
 export const idParamSchema = z.object({
-  id: z.string().uuid("id must be a valid UUID"),
+  id: z.string().guid("id must be a valid UUID"),
 });

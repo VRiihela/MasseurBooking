@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const bookingIdParamSchema = z.object({
-  id: z.string().uuid("booking id must be a valid UUID"),
+  id: z.string().guid("booking id must be a valid UUID"),
 });
 
 // 32 raw bytes -> 64 hex characters -- matches bookingTokenService's

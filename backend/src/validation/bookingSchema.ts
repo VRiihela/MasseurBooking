@@ -20,7 +20,7 @@ export const strictUtcTimestamp = z
 
 export const createBookingSchema = z
   .object({
-    service_id: z.string().uuid("service_id must be a valid UUID"),
+    service_id: z.string().guid("service_id must be a valid UUID"),
     start_at: strictUtcTimestamp,
     customer: z
       .object({
