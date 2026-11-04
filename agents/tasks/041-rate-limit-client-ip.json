@@ -1,0 +1,24 @@
+{
+  "title": "Backend: make rate limiting per-client behind Railway's proxy (trust proxy / client IP)",
+  "profile": "Node/TypeScript Backend",
+  "repo": "masseur-booking",
+  "tech": "Node/TypeScript backend only -- configuration change plus tests, no new dependency",
+  "keyConstraints": "Follow-up from task 039's Architect finding. backend/src/app.ts never sets Express's `trust proxy`, and every limiter in backend/src/middleware/rateLimit.ts uses express-rate-limit's default key, req.ip. The app runs behind Railway's proxy, so in production req.ip is most likely the proxy's address for every request, meaning all customers share ONE rate-limit bucket (or one per proxy address). Consequences if confirmed: the booking limiter (5 requests/minute) would block ALL customers once any 5 requests happen in a minute, and a single anonymous client could repeatedly lock out bookings or the admin login-link request limiter. Task 039's local experiments (Express + express-rate-limit, not Railway): default setting = shared bucket and forged X-Forwarded-For had no effect; `trust proxy = true` = UNSAFE (each forged X-Forwarded-For value got its own bucket, so clients could evade limits); `trust proxy = 1` = per-client and forged prefixes ignored, but ONLY if there is exactly one proxy hop in front of the app. Unknown and the core of this task: how many proxy hops Railway really puts in front of the service, and which header carries the real client IP (Railway's docs mention X-Real-IP as the client IP and say nothing about X-Forwarded-For, so do not assume). Required approach: (1) CONFIRM the current production behaviour first, without changing it -- search Railway logs for ERR_ERL_UNEXPECTED_X_FORWARDED_FOR, and call a rate-limited-header-bearing endpoint (e.g. GET /services returns RateLimit-Remaining) from two different networks (laptop and phone on mobile data) to see whether the counter is shared. (2) Determine the real hop count / client-IP header with evidence from the deployed service (e.g. a TEMPORARY diagnostic route or log line that reports req.ip, X-Forwarded-For and X-Real-IP, deployed, checked, and then REMOVED -- it must not ship permanently and must not expose anything beyond the caller's own request headers). (3) Only then set `trust proxy` to the exact verified hop count (a number, never `true`), or use a verified X-Real-IP key generator, and keep the setting configurable by environment variable so local/test environments are not forced to behave like production. Never trust a client-supplied header that Railway does not overwrite. Existing limiter limits and windows are NOT to be changed in this task. Tests: unit/integration tests proving that with the chosen setting requests from different client IPs get separate buckets and that a forged X-Forwarded-For value from a client cannot evade or poison another client's limit.",
+  "description": "Make the API's rate limits apply per customer instead of (probably) being shared across all customers behind Railway's proxy, using a verified trust-proxy setting, without making limits spoofable.",
+  "acceptanceCriteria": [
+    "The current production behaviour is confirmed and documented before any change (shared vs per-client bucket, evidence from logs and a two-network test)",
+    "The real proxy hop count / client-IP header is determined with evidence from the deployed service; any diagnostic route is removed before the final commit",
+    "`trust proxy` is set to a verified number (or a verified header key generator is used), never `true`, and is environment-configurable",
+    "Tests show separate buckets per client IP and that a forged X-Forwarded-For from one client cannot evade its own limit or consume another client's",
+    "No change to existing limits/windows; no new dependency",
+    "npm test (including integration tests), build, lint and tsc --noEmit pass in backend/; frontend untouched",
+    "After deploy, the two-network test shows separate counters per client"
+  ],
+  "relevantFilePaths": [
+    "backend/src/app.ts",
+    "backend/src/middleware/rateLimit.ts",
+    "backend/src/config/ (new env var for the proxy setting)",
+    "backend/test/ (rate limit tests)"
+  ],
+  "securityConsiderations": "A wrong trust-proxy setting either collapses all customers into one bucket (current suspected state, availability risk) or lets clients forge their IP to dodge limits (security risk, especially on the admin login-link and booking endpoints). The SECURITY stage should verify the setting against evidence from the deployed environment, not just local simulation, and confirm any diagnostic code is gone."
+}

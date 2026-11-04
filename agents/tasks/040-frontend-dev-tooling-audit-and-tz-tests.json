@@ -1,0 +1,24 @@
+{
+  "title": "Frontend: clear dev-toolchain audit advisories and make AdminCalendar tests timezone-independent",
+  "profile": "React Frontend",
+  "repo": "masseur-booking",
+  "tech": "React + TypeScript frontend only -- dev dependency updates and test fixes, no feature change",
+  "keyConstraints": "Follow-up to tasks 037/038, whose DoD audit gate was blocked by pre-existing advisories. In frontend/ `npm audit` currently reports 18 (13 moderate, 3 high, 2 critical), all in the dev/test/build toolchain except one moderate: `npm audit --omit=dev` shows only `moment` (moderate, path traversal via crafted locale name, pulled in by react-big-calendar) -- nothing HIGH/CRITICAL ships in the production bundle. HIGH/CRITICAL items: tinypool <=2.1.1 CRITICAL (prototype-pollution gadget -> RCE in worker options; via vitest ^3.2.4), brace-expansion HIGH (via eslint -> minimatch), source-map-js HIGH (DoS, via vite/postcss), and vite 7.0.0-7.3.6 HIGH (launch-editor / dev-server issues; affects the dev server). `npm audit fix` (non-breaking) is reported to cover brace-expansion, source-map-js, vite and moment; tinypool and @vitest/mocker need `npm audit fix --force`, which installs vitest 5.1.0 -- a major upgrade. Do NOT run --force blindly: Architect should read vitest 4/5 migration notes, check whether the existing 145-test suite (vitest + jsdom + @testing-library) and vite config still work, and decide between the major upgrade and a documented deferral. Also check whether the eslint chain (eslint ^10.8, typescript-eslint ^8.65, @eslint/js ^10) has a non-breaking resolution or needs a version bump, and keep `npm run lint` passing with the same rules. Second part: 4 tests in frontend/test/AdminCalendar.test.tsx fail when the suite runs with a non-Helsinki machine timezone (TZ=Asia/Tokyo -- reproduced by the task 038 Tester, same 4 fail on clean HEAD, so pre-existing); they pass in a Finnish-timezone environment only by coincidence. Investigate why (likely fixtures or assertions built with local-time Date arithmetic against Luxon/react-big-calendar's timezone handling or the fake-timer system time) and fix the TESTS or fixtures to be timezone-independent -- do not change production AdminCalendar behaviour unless the investigation proves a real bug (if it does, stop and report rather than changing behaviour silently). Verify by running the full frontend suite under at least TZ=Europe/Helsinki, TZ=UTC and TZ=Asia/Tokyo, all green. Keep lockfile changes minimal and list exactly which packages changed version. If `npm audit` still shows items after all feasible fixes, document each remaining one with its dev-only justification so the DoD gate decision is explicit.",
+  "description": "Bring the frontend's dev-toolchain dependencies to a state where `npm audit` no longer blocks the Definition of Done (or document precisely what remains and why), and fix four AdminCalendar tests that only pass in some machine timezones.",
+  "acceptanceCriteria": [
+    "`npm audit` in frontend/ reports no HIGH or CRITICAL advisories, or each remaining one is documented with why it cannot be fixed now and why it is dev-only",
+    "`npm audit --omit=dev` reports nothing HIGH/CRITICAL (moment moderate resolved if a non-breaking fix exists)",
+    "If vitest is upgraded to a new major: the whole existing suite passes with no weakened assertions; if deferred: a written risk assessment and migration notes",
+    "The 4 timezone-dependent AdminCalendar tests pass under TZ=Europe/Helsinki, TZ=UTC and TZ=Asia/Tokyo, with the root cause documented",
+    "No production source behaviour changes unless investigation proves a real bug, in which case work stops and reports",
+    "npm test, npm run build, npm run lint, and tsc --noEmit all pass in frontend/; lockfile diff limited to the intended packages",
+    "Backend untouched in this task"
+  ],
+  "relevantFilePaths": [
+    "frontend/package.json, frontend/package-lock.json",
+    "frontend/vite.config.* / vitest config",
+    "frontend/test/AdminCalendar.test.tsx",
+    "frontend/eslint.config.*"
+  ],
+  "securityConsiderations": "Dev-toolchain hygiene: the advisories are in tooling that runs on developer machines/CI (including a prototype-pollution RCE gadget in tinypool and dev-server issues in vite), not in the shipped bundle. SECURITY stage should confirm production-only audit stays clean and no new runtime dependency is introduced."
+}
