@@ -1,0 +1,20 @@
+{
+  "title": "Update availability integration tests for 30-minute slot granularity",
+  "profile": "Node/TypeScript Backend",
+  "repo": "masseur-booking",
+  "tech": "Node/TypeScript backend, tests only -- no production code change",
+  "keyConstraints": "Commit 8726df7 ('Availability slot from 15 to 30m') changed SLOT_GRANULARITY_MINUTES from 15 to 30 without updating tests. 6 tests in backend/test/integration/availability.test.ts now fail on clean master (found by task 039's run: 245/251 pass; with the constant temporarily set back to 15 all 251 pass, so the failures are purely stale expectations). Ville confirmed 30 minutes is the intended slot length. Update each failing test DELIBERATELY: work out from the test's setup (availability rule window, service duration, buffers) what the correct slot list is at 30-minute granularity and assert that, rather than just halving numbers or loosening assertions -- each updated test must still verify the behaviour it was written for (window edges, buffer handling, overlap exclusion, past-slot exclusion, etc.). Prefer deriving expected values from the exported SLOT_GRANULARITY_MINUTES constant where it keeps tests readable, so a future change of the constant does not break them again, but do not weaken the tests to make them constant-agnostic if that hides real expectations. Do NOT change SLOT_GRANULARITY_MINUTES or any production code. Check whether any other tests (unit tests, frontend tests) also embed the old 15-minute assumption and report them, even though only these 6 currently fail. This task must run against the test database (docker start masseur-pg if it is stopped).",
+  "description": "Fix the 6 stale availability integration tests so the full backend suite is green again after the slot length changed from 15 to 30 minutes, without changing production code.",
+  "acceptanceCriteria": [
+    "All 6 currently failing tests in backend/test/integration/availability.test.ts pass at SLOT_GRANULARITY_MINUTES = 30, each still verifying its original behaviour with correctly derived expectations",
+    "No production source file is changed",
+    "Full backend suite passes (unit + integration, 251/251 or more), plus build, lint and tsc --noEmit",
+    "Any other test embedding a 15-minute assumption is reported",
+    "Frontend untouched"
+  ],
+  "relevantFilePaths": [
+    "backend/test/integration/availability.test.ts",
+    "backend/src/ (SLOT_GRANULARITY_MINUTES -- read-only reference)"
+  ],
+  "securityConsiderations": "None -- test-only change."
+}

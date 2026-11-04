@@ -49,9 +49,13 @@ describe("GET /availability", () => {
     expect(response.status).toBe(200);
     expect(Array.isArray(response.body)).toBe(true);
     // 09:00-12:00 = 180 min window, 75-min slots (60 duration + 15 buffer_after),
-    // 15-min granularity -> starts at 0,15,...,105 => 8 slots.
-    expect(response.body).toHaveLength(8);
-    expect(response.body[0]).toBe(`${TEST_DATE}T09:00:00.000Z`);
+    // 30-min granularity -> starts at 0,30,60,90 (a start at 120 would overrun).
+    expect(response.body).toEqual([
+      `${TEST_DATE}T09:00:00.000Z`,
+      `${TEST_DATE}T09:30:00.000Z`,
+      `${TEST_DATE}T10:00:00.000Z`,
+      `${TEST_DATE}T10:30:00.000Z`,
+    ]);
   });
 
   it("returns no slots for a weekday with no rule and no exception", async () => {
@@ -72,9 +76,8 @@ describe("GET /availability", () => {
       .query({ service_id: serviceId, date: TEST_DATE });
 
     expect(response.status).toBe(200);
-    // 120 min window, 75-min slots, 15-min granularity -> starts 0,15,30,45 => 4 slots.
-    expect(response.body).toHaveLength(4);
-    expect(response.body[0]).toBe(`${TEST_DATE}T10:00:00.000Z`);
+    // 120 min window, 75-min slots, 30-min granularity -> starts at 0,30.
+    expect(response.body).toEqual([`${TEST_DATE}T10:00:00.000Z`, `${TEST_DATE}T10:30:00.000Z`]);
   });
 
   it("a 'blocked' exception removes availability even within normal rule hours", async () => {
@@ -133,8 +136,13 @@ describe("GET /availability", () => {
       .query({ service_id: serviceId, date: TEST_DATE });
 
     expect(response.status).toBe(200);
-    expect(response.body).toContain(`${TEST_DATE}T09:00:00.000Z`);
-    expect(response.body).toHaveLength(8);
+    // Same four slots as the rule with no booking at all.
+    expect(response.body).toEqual([
+      `${TEST_DATE}T09:00:00.000Z`,
+      `${TEST_DATE}T09:30:00.000Z`,
+      `${TEST_DATE}T10:00:00.000Z`,
+      `${TEST_DATE}T10:30:00.000Z`,
+    ]);
   });
 
   it("returns 404 for an unknown service_id", async () => {
@@ -193,7 +201,7 @@ describe("GET /availability", () => {
 
     expect(slots).not.toContain(`${TEST_DATE}T09:00:00.000Z`);
     expect(slots).not.toContain(`${TEST_DATE}T10:00:00.000Z`); // == cutoff, strict > excludes it
-    expect(slots[0]).toBe(`${TEST_DATE}T10:15:00.000Z`); // first slot strictly after cutoff
+    expect(slots).toEqual([`${TEST_DATE}T10:30:00.000Z`]); // only slot strictly after cutoff
   });
 });
 
@@ -258,9 +266,8 @@ describe.each([
 
     expect(response.status).toBe(200);
     // Unaffected by the previous-day booking -- same as the no-booking baseline
-    // (00:00-02:00 = 120 min, 75-min slots, 15-min granularity -> 4 slots).
-    expect(response.body).toHaveLength(4);
-    expect(response.body[0]).toBe(localMidnightUtc);
+    // (00:00-02:00 = 120 min, 75-min slots, 30-min granularity -> starts at 0,30).
+    expect(response.body).toEqual([localMidnightUtc, localToUtcIso(TEST_DATE, "00:30:00", zone)]);
   });
 
   it("includes a booking that starts exactly at the requested date's local midnight", async () => {

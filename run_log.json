@@ -701,5 +701,18 @@
       "reports/run_039-backend-dependency-audit.md",
       "run_log.json"
     ]
+  },
+  {
+    "id": "042-update-availability-tests-for-30min-slots",
+    "title": "Update availability integration tests for 30-minute slot granularity",
+    "profile": "Node/TypeScript Backend",
+    "timestamp": "2026-11-04T08:10:55.000Z",
+    "dodStatus": "pass",
+    "filesChanged": [
+      "agents/tasks/042-update-availability-tests-for-30min-slots.json",
+      "backend/test/integration/availability.test.ts",
+      "reports/run_042-update-availability-tests-for-30min-slots.md",
+      "run_log.json"
+    ]
   }
 ]
