@@ -682,5 +682,24 @@
       "frontend/test/BookingWidget.test.tsx",
       "frontend/test/ManageBooking.test.tsx"
     ]
+  },
+  {
+    "id": "039-backend-dependency-audit",
+    "title": "Backend: fix production-relevant npm audit advisories (body-parser, proxy-addr, qs, zod)",
+    "profile": "Node/TypeScript Backend",
+    "timestamp": "2026-11-04T07:54:28.000Z",
+    "dodStatus": "blocked: 6 integration tests in availability.test.ts fail, identically on clean master before this task (commit 8726df7 changed slot granularity from 15 to 30 minutes without updating them); all audit gates pass",
+    "filesChanged": [
+      "agents/tasks/039-backend-dependency-audit.json",
+      "backend/package.json",
+      "backend/package-lock.json",
+      "backend/src/validation/availabilityQuerySchema.ts",
+      "backend/src/validation/bookingIdParam.ts",
+      "backend/src/validation/bookingSchema.ts",
+      "backend/src/validation/idParamSchema.ts",
+      "backend/test/unit/zodBehaviour.test.ts",
+      "reports/run_039-backend-dependency-audit.md",
+      "run_log.json"
+    ]
   }
 ]
