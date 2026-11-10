@@ -38,7 +38,7 @@ The user reviews the Architect's plan (file list, risks, CIA impact, dependency 
 
 Note the pipeline never commits or pushes on its own — see "Git: Commit and Push Are Separate, Explicit Steps" below. The user reviews the DoD checklist and gives separate go-aheads for commit and push. Any discretionary calls the Architect surfaced get resolved explicitly in prompt 2's wording, not left for the Implementer to guess.
 
-This is the default going forward for any task run against this repo's pipeline: draft/scope the task spec, then hand over prompt 1; wait for the Architect output and Ville's approval; then hand over prompt 2; wait for the RELEASE report; then the user gives a separate go-ahead to commit, and another separate go-ahead to push.
+This is the default going forward for any task run against this repo's pipeline: draft/scope the task spec, then hand over prompt 1; wait for the Architect output and the user's approval; then hand over prompt 2; wait for the RELEASE report; then the user gives a separate go-ahead to commit, and another separate go-ahead to push.
 
 ## Git: Commit and Push Are Separate, Explicit Steps
 
