@@ -7,7 +7,6 @@ import { adminServicesRouter } from "./routes/adminServices.js";
 import { authRouter } from "./routes/auth.js";
 import { availabilityRouter } from "./routes/availability.js";
 import { bookingsRouter } from "./routes/bookings.js";
-import { diagnosticClientIpRouter } from "./routes/diagnosticClientIp.js";
 import { servicesRouter } from "./routes/services.js";
 import { loadCorsOrigin } from "./config/cors.js";
 import { AppError } from "./errors.js";
@@ -46,7 +45,6 @@ export function createApp() {
   app.use(adminAvailabilityRouter);
   app.use(adminProviderRouter);
   app.use(servicesRouter);
-  app.use(diagnosticClientIpRouter);
 
   app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
     if (err instanceof AppError) {

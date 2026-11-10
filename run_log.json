@@ -714,5 +714,25 @@
       "reports/run_042-update-availability-tests-for-30min-slots.md",
       "run_log.json"
     ]
+  },
+  {
+    "id": "041-rate-limit-client-ip",
+    "title": "Backend: make rate limiting per-client behind Railway's proxy (trust proxy / client IP)",
+    "profile": "Node/TypeScript Backend",
+    "timestamp": "2026-11-10T14:16:11.000Z",
+    "dodStatus": "pass (post-deploy two-network counter check pending)",
+    "filesChanged": [
+      "backend/.env.example",
+      "backend/src/app.ts",
+      "backend/src/config/rateLimit.ts",
+      "backend/src/middleware/rateLimit.ts",
+      "backend/src/routes/diagnosticClientIp.ts (deleted)",
+      "backend/test/integration/diagnosticClientIp.test.ts (deleted)",
+      "backend/test/integration/rateLimit.clientIp.test.ts",
+      "backend/test/unit/rateLimit.limiters.test.ts",
+      "backend/test/unit/rateLimitKey.test.ts",
+      "reports/run_041-rate-limit-client-ip.md",
+      "run_log.json"
+    ]
   }
 ]

@@ -1,10 +1,44 @@
-import rateLimit from "express-rate-limit";
+import { isIP } from "node:net";
+import type { Request } from "express";
+import rateLimit, { ipKeyGenerator } from "express-rate-limit";
+import { loadRateLimitClientIpHeader } from "../config/rateLimit.js";
+
+/**
+ * The client IP every limiter keys on. Behind Railway, req.ip is the address
+ * of Railway's internal proxy (trust proxy stays off, and X-Forwarded-For
+ * carries an extra Railway hop), so production sets
+ * RATE_LIMIT_CLIENT_IP_HEADER=x-real-ip to use the header Railway's edge
+ * overwrites with the real client address. A missing or invalid header value
+ * falls back to req.ip.
+ */
+export function clientIpFromRequest(req: Request): string | undefined {
+  const headerName = loadRateLimitClientIpHeader();
+  if (headerName) {
+    const value = req.headers[headerName];
+    if (typeof value === "string" && isIP(value) !== 0) {
+      return value;
+    }
+  }
+  return req.ip;
+}
+
+/**
+ * ipKeyGenerator folds IPv4-mapped IPv6 addresses into plain IPv4 and groups
+ * IPv6 addresses by /56, so one client can't rotate through its own IPv6
+ * range to get fresh buckets. A request with no address at all (connection
+ * already gone) shares one "unknown" bucket.
+ */
+export function rateLimitKey(req: Request): string {
+  const ip = clientIpFromRequest(req);
+  return ip ? ipKeyGenerator(ip) : "unknown";
+}
 
 export const bookingCreationRateLimit = rateLimit({
   windowMs: 60_000,
   limit: 5,
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: rateLimitKey,
   message: { error: "Too many booking requests. Please try again shortly." },
 });
 
@@ -15,6 +49,7 @@ export const adminRateLimit = rateLimit({
   limit: 20,
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: rateLimitKey,
   message: { error: "Too many requests. Please try again shortly." },
 });
 
@@ -25,6 +60,7 @@ export const loginRequestRateLimit = rateLimit({
   limit: 5,
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: rateLimitKey,
   message: { error: "Too many requests. Please try again shortly." },
 });
 
@@ -35,6 +71,7 @@ export const availabilityRateLimit = rateLimit({
   limit: 30,
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: rateLimitKey,
   message: { error: "Too many requests. Please try again shortly." },
 });
 
@@ -47,6 +84,7 @@ export const publicServicesRateLimit = rateLimit({
   limit: 30,
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: rateLimitKey,
   message: { error: "Too many requests. Please try again shortly." },
 });
 
@@ -58,6 +96,7 @@ export const customerBookingViewRateLimit = rateLimit({
   limit: 20,
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: rateLimitKey,
   message: { error: "Too many requests. Please try again shortly." },
 });
 
@@ -73,5 +112,6 @@ export const customerBookingActionRateLimit = rateLimit({
   limit: 20,
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: rateLimitKey,
   message: { error: "Too many requests. Please try again shortly." },
 });
