@@ -15,12 +15,15 @@ import type { AvailabilityException } from "../src/api/types";
 const SESSION_TOKEN_STORAGE_KEY = "masseurSessionToken";
 const TOKEN = "session-token-abc";
 
-// Pinned an hour after "now" so bookings land inside today's Day/Week view
-// without depending on wall-clock time when the test suite happens to run.
-const NOW = new Date("2026-08-10T12:00:00.000Z");
-const inAnHour = new Date(NOW.getTime() + 60 * 60_000);
-const inThreeHours = new Date(NOW.getTime() + 3 * 60 * 60_000);
-const inFourHours = new Date(NOW.getTime() + 4 * 60 * 60_000);
+// Built from LOCAL clock times (month index 7 = August) so "now" and every
+// booking fall on the same local day in any machine timezone -- the calendar
+// opens in Day view on the browser's local "today". Fixed UTC instants put a
+// booking past local midnight in timezones such as Asia/Tokyo. Bookings start
+// an hour after "now", independent of when the suite happens to run.
+const NOW = new Date(2026, 7, 10, 12, 0, 0);
+const inAnHour = new Date(2026, 7, 10, 13, 0, 0);
+const inThreeHours = new Date(2026, 7, 10, 15, 0, 0);
+const inFourHours = new Date(2026, 7, 10, 16, 0, 0);
 
 const PENDING_BOOKING = {
   id: "booking-1",

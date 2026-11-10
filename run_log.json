@@ -734,5 +734,19 @@
       "reports/run_041-rate-limit-client-ip.md",
       "run_log.json"
     ]
+  },
+  {
+    "id": "040-frontend-dev-tooling-audit-and-tz-tests",
+    "title": "Frontend: clear dev-toolchain audit advisories and make AdminCalendar tests timezone-independent",
+    "profile": "React Frontend",
+    "timestamp": "2026-11-10T15:17:27.000Z",
+    "dodStatus": "pass",
+    "filesChanged": [
+      "frontend/package.json",
+      "frontend/package-lock.json",
+      "frontend/test/AdminCalendar.test.tsx",
+      "reports/run_040-frontend-dev-tooling-audit-and-tz-tests.md",
+      "run_log.json"
+    ]
   }
 ]
